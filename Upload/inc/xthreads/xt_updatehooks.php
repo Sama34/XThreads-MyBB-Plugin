@@ -1120,13 +1120,13 @@ function xthreads_upload_attachments() {
 			if($is_editing && $is_mybb_18) {
 				// special workaround for MyBB 1.8
 				$GLOBALS['xt_attach_errors'] =& $errstr;
+				$GLOBALS['xt_attach_errors_array'] =& $errors;
 				$templates->cache['__xt_orig_error_attacherror'] = $templates->cache['error_attacherror'];
 				function xthreads_upload_attachments_error() {
 					global $theme, $templates, $attacherror, $mybb, $lang, $fid;
-					if($attacherror) return; // already handled by template cache hack
-					
-					$attachedfile = array('error' => '<ul>'.$GLOBALS['xt_attach_errors'].'</ul>');
-					eval('$attacherror = "'.$templates->get('__xt_orig_error_attacherror').'";');
+					if($attacherror || !$GLOBALS['xt_attach_errors_array']) return; // already handled by template cache hack
+
+					$attacherror = inline_error($GLOBALS['xt_attach_errors_array']);
 				}
 				$plugins->add_hook('editpost_action_start', 'xthreads_upload_attachments_error');
 			} else {
