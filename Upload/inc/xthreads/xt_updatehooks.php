@@ -575,7 +575,9 @@ function xthreads_input_generate(&$data, &$threadfields, $fid, $tid=0) {
 			global $db;
 			$tfd_cache[$tid] = $db->fetch_array($db->simple_select('threadfields_data', '*', 'tid='.$tid));
 			if(!$tfd_cache[$tid])
-				$tfd_cache[$tid] = array_map('intval', $threadfields); // only need the keys - don't care about values
+				$tfd_cache[$tid] = array_map(function () {
+					return 0;
+				}, $threadfields); // only need the keys - don't care about values
 		}
 		$tfd =& $tfd_cache[$tid];
 	}
