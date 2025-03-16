@@ -1121,7 +1121,7 @@ function xthreads_upload_attachments() {
 				// special workaround for MyBB 1.8
 				$GLOBALS['xt_attach_errors'] =& $errstr;
 				$GLOBALS['xt_attach_errors_array'] =& $errors;
-				$templates->cache['__xt_orig_error_attacherror'] = $templates->cache['error_attacherror'];
+				$templates->cache['__xt_orig_error_attacherror'] = $templates->cache['error_attacherror'] ?? '';
 				function xthreads_upload_attachments_error() {
 					global $theme, $templates, $attacherror, $mybb, $lang, $fid;
 					if($attacherror || !$GLOBALS['xt_attach_errors_array']) return; // already handled by template cache hack
@@ -1134,7 +1134,7 @@ function xthreads_upload_attachments() {
 				eval('$GLOBALS[\'attacherror\'] .= "'.$templates->get('error_attacherror').'";');
 			}
 			// if there's going to be a MyBB attachment error, and it's not been evaluated yet, shove it in the template to force it through - safe since this function is guaranteed to run only once
-			$templates->cache['error_attacherror'] = str_replace('{$attachedfile[\'error\']}', '<ul>'.strtr($errstr, array('\\' => '\\\\', '$' => '\\$', '{' => '\\{', '}' => '\\}')).'<li>{$attachedfile[\'error\']}</li></ul>', $templates->cache['error_attacherror']);
+			$templates->cache['error_attacherror'] = str_replace('{$attachedfile[\'error\']}', '<ul>'.strtr($errstr, array('\\' => '\\\\', '$' => '\\$', '{' => '\\{', '}' => '\\}')).'<li>{$attachedfile[\'error\']}</li></ul>', $templates->cache['error_attacherror'] ?? '');
 		} elseif($is_mybb_18) {
 			// for MyBB 1.8
 			$GLOBALS['xt_attach_errors'] =& $errors;
