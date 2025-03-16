@@ -194,7 +194,7 @@ function xthreads_showthread_firstpost() {
 	
 	// and now actually do the hack to display the first post on each page
 	if($GLOBALS['forum']['xthreads_firstpostattop']) { // would be great if we had a reliable way to determine if we're on the first page here
-		$db->xthreads_firstpost_hack = false;
+		$mybb->config['xthreads_firstpost_hack'] = false;
 		
 		// this is a dirty hack we probably shouldn't be relying on (but eh, it works)
 		// basically '-0' evaluates to true, effectively skipping the check in build_postbit()
@@ -203,14 +203,14 @@ function xthreads_showthread_firstpost() {
 		
 		$extra_code = '
 			function fetch_array($query, $resulttype=1) { // 1 == MYSQL_ASSOC == MYSQLI_ASSOC == PGSQL_ASSOC
-				if($this->xthreads_firstpost_hack) {
-					$this->xthreads_firstpost_hack = false;
+				if(!empty($GLOBALS[\'mybb\']->config[\'xthreads_firstpost_hack\']) {
+					$GLOBALS[\'mybb\']->config[\'xthreads_firstpost_hack\'] = false;
 					return array(\'pid\' => $GLOBALS[\'thread\'][\'firstpost\']);
 				}
 				return parent::fetch_array($query, $resulttype);
 			}
 		';
-		$firstpost_hack_code = 'if(!empty($options[\'limit_start\'])) $this->xthreads_firstpost_hack = true;';
+		$firstpost_hack_code = 'if(!empty($options[\'limit_start\'])) $GLOBALS[\'mybb\']->config[\'xthreads_firstpost_hack\'] = true;';
 	} else {
 		$extra_code = '';
 		$firstpost_hack_code = 'if(empty($options[\'limit_start\']))';
