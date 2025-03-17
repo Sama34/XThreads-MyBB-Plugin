@@ -61,8 +61,8 @@ else {
 		}
 	// script will work if magic quotes is on, unless filenames happen to have quotes or something
 	if(function_exists('set_magic_quotes_runtime'))
-		@set_magic_quotes_runtime(0);
-	@ini_set('magic_quotes_runtime', 0); 
+		set_magic_quotes_runtime(0);
+	ini_set('magic_quotes_runtime', 0);
 	// will also work with register globals, so we won't bother with these
 	
 	if(function_exists('date_default_timezone_set') && !ini_get('date.timezone'))
@@ -71,7 +71,7 @@ else {
 	define('MYBB_ROOT', dirname(__FILE__).'/');
 	if(!file_exists(MYBB_ROOT.'cache/xthreads.php'))
 		fatal_error('500 Internal Server Error', 'XThreads is not installed.');
-	@include_once(MYBB_ROOT.'cache/xthreads.php'); // include defines
+	include_once(MYBB_ROOT.'cache/xthreads.php'); // include defines
 }
 
 
@@ -94,7 +94,7 @@ function do_processing() {
 			$bburl = 'htp://example.com/'; // dummy
 	}
 	
-	if(!@is_dir($basedir))
+	if(!is_dir($basedir))
 		fatal_error('500 Internal Server Error', 'Can\'t find XThreads base directory.');
 
 	// parse input filename
@@ -314,7 +314,7 @@ function do_processing() {
 		if(!$content_type) {
 			// try MyBB's attachment cache if cached to files
 			if(file_exists(MYBB_ROOT.'cache/attachtypes.php')) {
-				@include MYBB_ROOT.'cache/attachtypes.php';
+				include MYBB_ROOT.'cache/attachtypes.php';
 				if(isset($attachtypes) && is_array($attachtypes) && isset($attachtypes[$ext])) {
 					$content_type = $attachtypes[$ext]['mimetype'];
 				}
@@ -325,10 +325,10 @@ function do_processing() {
 	if(!$content_type) {
 		// try system MIME file
 		if(function_exists('mime_content_type'))
-			//$content_type = @mime_content_type($match[5]);
-			$content_type = @mime_content_type($fn);
-		elseif(function_exists('finfo_open') && ($fi = @finfo_open(FILEINFO_MIME))) {
-			$content_type = @finfo_file($fi, $fn);
+			//$content_type = mime_content_type($match[5]);
+			$content_type = mime_content_type($fn);
+		elseif(function_exists('finfo_open') && ($fi = finfo_open(FILEINFO_MIME))) {
+			$content_type = finfo_file($fi, $fn);
 			finfo_close($fi);
 		}
 	}
@@ -499,14 +499,14 @@ function increment_downloads($aid) {
 	if(!extension_loaded($db->engine)) {
 		if(!function_exists('dl')) return;
 		if(DIRECTORY_SEPARATOR == '\\')
-			@dl('php_'.$db->engine.'.dll');
+			dl('php_'.$db->engine.'.dll');
 		else
-			@dl($db->engine.'.so');
+			dl($db->engine.'.so');
 		if(!extension_loaded($db->engine)) return;
 	}
 	
 	// connect to DB
-	define('TABLE_PREFIX', $config['database']['table_prefix']);
+	defined('TABLE_PREFIX') || define('TABLE_PREFIX', $config['database']['table_prefix']);
 	$db->connect($config['database']);
 	$db->set_table_prefix(TABLE_PREFIX);
 	$db->type = $config['database']['type'];
@@ -517,6 +517,6 @@ function increment_downloads($aid) {
 	
 	// so we do all the above just to run an update query :P
 	$db->write_query('UPDATE '.$db->table_prefix.'xtattachments SET downloads=downloads+1 WHERE aid='.(int)$aid, 1);
-	$db->close();
+	//$db->close();
 	unset($db, $GLOBALS['mybb']);
 }
