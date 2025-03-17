@@ -792,7 +792,7 @@ function xthreads_get_xta_url(&$xta, $thumb='') {
 	if($thumb) $thumb = $delim.'thumb'.$thumb;
 	else $thumb = '';
 	
-	$attachhash = substr($xta['attachname'], 0, 8);
+	$attachhash = substr($xta['attachname'] ?? '', 0, 8);
 	if(XTHREADS_EXPIRE_ATTACH_LINK || XTHREADS_ATTACH_LINK_IPMASK) {
 		if(!function_exists('xthreads_attach_encode_hash')) {
 			require_once MYBB_ROOT.'inc/xthreads/xt_attachfuncs.php';
