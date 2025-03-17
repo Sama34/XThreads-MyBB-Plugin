@@ -799,7 +799,7 @@ function xthreads_get_xta_url(&$xta, $thumb='') {
 		}
 		$attachhash = xthreads_attach_encode_hash($attachhash);
 	}
-	return 'xthreads_attach.php'.($use_qstr?'?file=':'/').$xta['aid'].'_'.$updatetime.'_'.$attachhash.$delim.$md5hash.rawurlencode($xta['filename']).$thumb;
+	return 'xthreads_attach.php'.($use_qstr?'?file=':'/').$xta['aid'].'_'.$updatetime.'_'.$attachhash.$delim.$md5hash.rawurlencode($xta['filename'] ?? '').$thumb;
 }
 
 // only 'username' and 'fid' keys are used from the $thread array
