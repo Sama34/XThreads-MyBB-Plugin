@@ -200,12 +200,23 @@ function xthreads_showthread_firstpost() {
 		// basically '-0' evaluates to true, effectively skipping the check in build_postbit()
 		// but when incremented, becomes 1
 		$GLOBALS['postcounter'] = '-0';
-		
+
+		function xthreads_showthread_firstpost_hack_workaround() {
+			global $mybb;
+
+			if(!empty($mybb->config['xthreads_firstpost_hack'])) {
+				$mybb->config['xthreads_firstpost_hack'] = false;
+
+				return array('pid' => $GLOBALS['thread']['firstpost']);
+			}
+
+			return false;
+		}
+
 		$extra_code = '
 			function fetch_array($query, $resulttype=1) { // 1 == MYSQL_ASSOC == MYSQLI_ASSOC == PGSQL_ASSOC
-				if(!empty($GLOBALS[\'mybb\']->config[\'xthreads_firstpost_hack\']) {
-					$GLOBALS[\'mybb\']->config[\'xthreads_firstpost_hack\'] = false;
-					return array(\'pid\' => $GLOBALS[\'thread\'][\'firstpost\']);
+				if($return_array = xthreads_showthread_firstpost_hack_workaround()) {
+					return $return_array;
 				}
 				return parent::fetch_array($query, $resulttype);
 			}
