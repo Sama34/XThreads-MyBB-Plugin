@@ -256,8 +256,8 @@ function xthreads_global() {
 						return parent::get($title, $eslashes, $htmlcomments);
 					}
 				');
-				$templates->non_existant_templates = array();
-				$templates->xt_tpl_prefix = $xtforum['tplprefix'];
+				$mybb->config['non_existant_templates'] = array();
+				$mybb->config['xt_tpl_prefix'] = $xtforum['tplprefix'];
 			}
 			if($xtforum['langprefix'] !== '') {
 				global $lang;
@@ -355,14 +355,14 @@ function xthreads_global() {
 
 function xthreads_tpl_cache(&$t, &$obj) {
 	if(xthreads_empty($t)) return;
-	global $db, $theme;
-	
+	global $db, $theme, $mybb;
+
 	$sql = '';
 	$ta = explode(',', $t);
 	foreach($ta as &$tpl) {
 		$tpl = trim($tpl);
 		$sql .= ',"'.$tpl.'"';
-		foreach($obj->xt_tpl_prefix as &$prefix)
+		foreach($mybb->config['xt_tpl_prefix'] as &$prefix)
 			$sql .= ',"'.$db->escape_string($prefix.$tpl).'"';
 	}
 	$query = $db->simple_select('templates', 'title,template', 'title IN (""'.$sql.') AND sid IN ("-2","-1","'.$theme['templateset'].'")', array('order_by' => 'sid', 'order_dir' => 'asc'));
@@ -372,14 +372,14 @@ function xthreads_tpl_cache(&$t, &$obj) {
 	
 	// now override default templates - this code actually ensures that all requested templates will have an entry in the cache array
 	foreach($ta as &$tpl) {
-		foreach($obj->xt_tpl_prefix as &$prefix)
+		foreach($mybb->config['xt_tpl_prefix'] as &$prefix)
 			if(isset($obj->cache[$prefix.$tpl])) {
 				$obj->cache[$tpl] =& $obj->cache[$prefix.$tpl];
 				break;
 			}
 		if(!isset($obj->cache[$tpl])) { // we'll add a possible optimisation thing here that MyBB doesn't do :P
 			$obj->cache[$tpl] = '';
-			$obj->non_existant_templates[$tpl] = true; // workaround for forumbits and postbit_first template prefixing
+			$mybb->config['non_existant_templates'][$tpl] = true; // workaround for forumbits and postbit_first template prefixing
 		}
 	}
 	// note: above won't affect portal/search templates, so isset() check does check whether template actually exists
@@ -506,7 +506,7 @@ function xthreads_sanitize_disp_set_xta_fields(&$s, $aid, &$tfinfo, $dispfmt='',
 		//return $s;
 	}
 	$s = $xta_cache[$aid];
-	$s['downloads_friendly'] = my_number_format(isset($s['downloads']) ? $s['downloads'] : 0);
+	$s['downloads_friendly'] = my_number_format($s['downloads'] ?? 0);
 	$s['url'] = xthreads_get_xta_url($s); // this must be placed before filename so that it isn't htmlspecialchar'd!
 	$s['filename'] = isset($s['filename']) ? htmlspecialchars_uni($s['filename']) : '';
 	$s['uploadmime'] = isset($s['uploadmime']) ? htmlspecialchars_uni($s['uploadmime']) : '';
