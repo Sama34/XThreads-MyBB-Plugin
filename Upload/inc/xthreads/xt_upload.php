@@ -4,7 +4,7 @@
  */
 
 // note, $uid is used purely for flood checking; not verification, identification or anything else
-function &upload_xtattachment($attachment, &$tf, $uid, $update_attachment=0, $tid=0)
+function &upload_xtattachment(array|string $attachment, array &$tf, int $uid, int $update_attachment=0, int $tid=0): array
 {
 	$attacharray = do_upload_xtattachment($attachment, $tf, $update_attachment, $tid);
 	if(!empty($attacharray['error']))
@@ -15,18 +15,18 @@ function &upload_xtattachment($attachment, &$tf, $uid, $update_attachment=0, $ti
 	if($uid && !$done_flood_check && !empty($attacharray['aid'])) {
         require_once MYBB_ROOT.'inc/xthreads/xt_modupdhooks.php';
 		$done_flood_check = true;
-		xthreads_rm_attach_query('tid=0 AND uid='.(int)$uid.' AND aid != '.$attacharray['aid'].' AND updatetime < '.(TIME_NOW-XTHREADS_UPLOAD_EXPIRE_TIME));
+		xthreads_rm_attach_query('tid=0 AND uid='.(int)$uid.' AND aid != '.$attacharray['aid'].' AND updatetime < '.(TIME_NOW-(defined('XTHREADS_UPLOAD_EXPIRE_TIME') ? XTHREADS_UPLOAD_EXPIRE_TIME : 0)));
 		// we'll do an extra query to get around the issue of delete queries not supporting offsets
 		global $db;
-		$cutoff = $db->fetch_field($db->simple_select('xtattachments', 'uploadtime', 'tid=0 AND uid='.(int)$uid.' AND aid != '.$attacharray['aid'].' AND uploadtime > '.(TIME_NOW-XTHREADS_UPLOAD_FLOOD_TIME), array('order_by' => 'uploadtime', 'order_dir' => 'desc', 'limit' => 1, 'limit_start' => XTHREADS_UPLOAD_FLOOD_NUMBER)), 'uploadtime');
+		$cutoff = $db->fetch_field($db->simple_select('xtattachments', 'uploadtime', 'tid=0 AND uid='.(int)$uid.' AND aid != '.$attacharray['aid'].' AND uploadtime > '.(TIME_NOW-(defined('XTHREADS_UPLOAD_FLOOD_TIME') ? XTHREADS_UPLOAD_FLOOD_TIME : 0)), array('order_by' => 'uploadtime', 'order_dir' => 'desc', 'limit' => 1, 'limit_start' => (defined('XTHREADS_UPLOAD_FLOOD_NUMBER') ? XTHREADS_UPLOAD_FLOOD_NUMBER : 0))), 'uploadtime');
 		if($cutoff)
-			xthreads_rm_attach_query('tid=0 AND uid='.(int)$uid.' AND aid != '.$attacharray['aid'].' AND uploadtime > '.(TIME_NOW-XTHREADS_UPLOAD_FLOOD_TIME).' AND uploadtime <= '.$cutoff);
+			xthreads_rm_attach_query('tid=0 AND uid='.(int)$uid.' AND aid != '.$attacharray['aid'].' AND uploadtime > '.(TIME_NOW-(defined('XTHREADS_UPLOAD_FLOOD_TIME') ? XTHREADS_UPLOAD_FLOOD_TIME : 0)).' AND uploadtime <= '.$cutoff);
 	}
 	
 	return $attacharray;
 }
 
-function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0, $timestamp=TIME_NOW)
+function do_upload_xtattachment(array|string $attachment, array &$tf, int $update_attachment=0, int $tid=0, int $timestamp=TIME_NOW): array
 {
 	global $db, $mybb, $lang;
 	
@@ -56,17 +56,17 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 		}
 		
 		
-		$file_size = $attachment['size']; // @filesize($attachment['tmp_name'])
+		$file_size = $attachment['size']; // filesize($attachment['tmp_name'])
 		
 		$attachment['name'] = strtr($attachment['name'], array('/' => '', "\x0" => ''));
 		
 		if($error = xthreads_validate_attachment($attachment, $tf)) {
-			@unlink($attachment['tmp_name']);
+			unlink($attachment['tmp_name']);
 			return array('error' => $error);
 		}
 		
 		$movefunc = 'move_uploaded_file';
-	} elseif($mybb->usergroup['cancp'] == 1 && substr($attachment, 0, 7) == 'file://') {
+	} elseif($mybb->usergroup['cancp'] == 1 && str_starts_with($attachment, 'file://')) {
 		// admin file move
 		$filename = strtr(substr($attachment, 7), array('/' => '', DIRECTORY_SEPARATOR => '', "\0" => ''));
 		$file = $path.'admindrop/'.$filename;
@@ -83,7 +83,7 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 		$attachment = array(
 			'name' => $filename,
 			'tmp_name' => $file,
-			'size' => @filesize($file),
+			'size' => filesize($file),
 		);
 		unset($file, $filename);
 		if($error = xthreads_validate_attachment($attachment, $tf)) {
@@ -98,7 +98,7 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 			$magic =& $tf['filemagic'];
 		else
 			$magic = array();
-		$attachment = xthreads_fetch_url($attachment, isset($tf['filemaxsize']) ? $tf['filemaxsize'] : 0, isset($tf['fileexts']) ? $tf['fileexts'] : '', $magic);
+		$attachment = xthreads_fetch_url($attachment, (int)($tf['filemaxsize'] ?? 0), $tf['fileexts'] ?? '', $magic);
 		db_ping($db);
 		if(!empty($attachment['error'])) {
 			return array('error' => $attachment['error']);
@@ -115,9 +115,9 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 	
 	
 	if(!empty($tf['fileimage'])) {
-		$img_dimensions = @getimagesize($attachment['tmp_name']);
+		$img_dimensions = getimagesize($attachment['tmp_name']);
 		if(empty($img_dimensions) || !in_array($img_dimensions[2], array(IMAGETYPE_GIF,IMAGETYPE_JPEG,IMAGETYPE_PNG))) {
-			@unlink($attachment['tmp_name']);
+			unlink($attachment['tmp_name']);
 			return array('error' => $lang->error_attachtype);
 		}
 		if(preg_match('~^([0-9]+)x([0-9]+)(\\|([0-9]+)x([0-9]+))?$~', $tf['fileimage'], $match)) {
@@ -127,7 +127,7 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 					$img_dimensions[0] > $match[4] || $img_dimensions[1] > $match[5]
 				)
 			)) {
-				@unlink($attachment['tmp_name']);
+				unlink($attachment['tmp_name']);
 				return array('error' => $lang->sprintf($lang->xthreads_xtaerr_error_imgdims, $img_dimensions[0], $img_dimensions[1]));
 			}
 		}
@@ -135,9 +135,9 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 		// convert WBMP -> PNG (saves space, bandwidth and works with MyBB's thumbnail generator)
 		// unfortunately, although this is nice, we have a problem of filetype checking etc...
 		if($img_dimensions[2] == IMAGETYPE_WBMP) {
-			if(function_exists('imagecreatefromwbmp') && $img = @imagecreatefromwbmp($attachment['tmp_name'])) {
-				@unlink($attachment['tmp_name']);
-				@imagepng($img, $attachment['tmp_name'], 6); // use zlib's recommended compression level
+			if(function_exists('imagecreatefromwbmp') && $img = imagecreatefromwbmp($attachment['tmp_name'])) {
+				unlink($attachment['tmp_name']);
+				imagepng($img, $attachment['tmp_name'], 6); // use zlib's recommended compression level
 				imgdestroy($img);
 				unset($img);
 				// double check that we have a file
@@ -146,7 +146,7 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 				// change extension + update filesize, do MIME as well
 				if(strtolower(substr($attachment['name'], -5)) == '.wbmp')
 					$attachment['name'] = substr($attachment['name'], 0, -5).'.png';
-				$file_size = @filesize($attachment['tmp_name']);
+				$file_size = filesize($attachment['tmp_name']);
 				if(strtolower($attachment['type']) == 'image/wbmp')
 					$attachment['type'] = 'image/png';
 				// update type too
@@ -154,7 +154,7 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 			}
 			else {
 				// can't do much, error out
-				@unlink($attachment['tmp_name']);
+				unlink($attachment['tmp_name']);
 				return array('error' => $lang->error_attachtype);
 			}
 		}
@@ -162,10 +162,10 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 		// we won't actually bother checking MIME types - not a big issue anyway
 	}
 	
-	if(!XTHREADS_UPLOAD_LARGEFILE_SIZE || $file_size < XTHREADS_UPLOAD_LARGEFILE_SIZE) {
-		@set_time_limit(30); // as md5_file may take a while
+	if(!defined('XTHREADS_UPLOAD_LARGEFILE_SIZE') || !XTHREADS_UPLOAD_LARGEFILE_SIZE || $file_size < XTHREADS_UPLOAD_LARGEFILE_SIZE) {
+		set_time_limit(30); // as md5_file may take a while
 		$md5_start = time();
-		$file_md5 = @md5_file($attachment['tmp_name'], true);
+		$file_md5 = md5_file($attachment['tmp_name'], true);
 		if(strlen($file_md5) == 32) {
 			// perhaps not PHP5
 			$file_md5 = pack('H*', $file_md5);
@@ -187,7 +187,7 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 			$md5check = '';
 		$prevattach = $db->fetch_array($db->simple_select('xtattachments', 'aid', 'filename="'.$db->escape_string($attachment['name']).'" AND (md5hash IS NULL'.$md5check.') AND filesize='.$file_size.' AND (posthash="'.$posthash.'" OR (tid='.$tid.' AND tid!=0))'));
 		if(!empty($prevattach['aid'])) {
-			@unlink($attachment['tmp_name']);
+			unlink($attachment['tmp_name']);
 			// TODO: maybe return aid instead?
 			return array('error' => $lang->error_alreadyuploaded);
 		}
@@ -201,17 +201,17 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 		$month_dir = '';
 	} else {
 		$month_dir = 'ts_'.floor(TIME_NOW / 1000000).'/';
-		if(!@is_dir($path.$month_dir)) {
-			@mkdir($path.$month_dir);
+		if(!is_dir($path.$month_dir)) {
+			mkdir($path.$month_dir);
 			// Still doesn't exist - oh well, throw it in the main directory
-			if(@is_dir($path.$month_dir)) {
+			if(is_dir($path.$month_dir)) {
 				// write index file
 				if($index = fopen($path.$month_dir.'index.html', 'w')) {
 					fwrite($index, '<html><body></body></html>');
 					fclose($index);
-					@my_chmod($path.$month_dir.'index.html', 0644);
+					my_chmod($path.$month_dir.'index.html', 0644);
 				}
-				@my_chmod($path.$month_dir, 0755);
+				my_chmod($path.$month_dir, 0755);
 			}
 			else
 				$month_dir = '';
@@ -219,26 +219,26 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 	}
 	
 	// All seems to be good, lets move the attachment!
-	$basename = substr(md5(uniqid(mt_rand(), true).substr($mybb->post_code, 16)), 12, 8).'_'.preg_replace('~[^a-zA-Z0-9_\-%]~', '', str_replace(array(' ', '.', '+'), '_', $attachment['name'])).'.upload';
+	$basename = substr(md5(uniqid((string)mt_rand(), true).substr($mybb->post_code, 16)), 12, 8).'_'.preg_replace('~[^a-zA-Z0-9_\-%]~', '', str_replace(array(' ', '.', '+'), '_', $attachment['name'])).'.upload';
 	$filename = 'file_'.(!empty($prevattach['aid']) ? $prevattach['aid'] : 't'.TIME_NOW).'_'.$basename;
 	
-	@ignore_user_abort(true); // don't let the user break this integrity between file system and DB
+	ignore_user_abort(true); // don't let the user break this integrity between file system and DB
 	if(isset($GLOBALS['xtfurl_tmpfiles'])) { // if using url fetch, remove this from list of temp files
 		unset($GLOBALS['xtfurl_tmpfiles'][$attachment['tmp_name']]);
 	}
-	while(!(@$movefunc($attachment['tmp_name'], $path.$month_dir.$filename))) {
+	while(!($movefunc($attachment['tmp_name'], $path.$month_dir.$filename))) {
 		if($month_dir) { // try doing it again without the month_dir
 			$month_dir = '';
 		} else {
 			// failed
-			@ignore_user_abort(false);
+			ignore_user_abort(false);
 			return array('error' => $lang->error_uploadfailed.$lang->error_uploadfailed_detail.$lang->error_uploadfailed_movefailed);
 		}
 	}
 	
 	// Lets just double check that it exists
 	if(!file_exists($path.$month_dir.$filename)) {
-		@ignore_user_abort(false);
+		ignore_user_abort(false);
 		return array('error' => $lang->error_uploadfailed.$lang->error_uploadfailed_detail.$lang->error_uploadfailed_lost);
 	}
 	
@@ -280,21 +280,21 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 		$attacharray['aid'] = xthreads_db_insert('xtattachments', $attacharray);
 		// now that we have the aid, move the file
 		$new_file = $path.$month_dir.'file_'.$attacharray['aid'].'_'.$basename;
-		@rename($path.$month_dir.$filename, $new_file);
+		rename($path.$month_dir.$filename, $new_file);
 		if(!file_exists($new_file)) {
 			// oh dear, all our work for nothing...
-			@unlink($path.$month_dir.$filename);
+			unlink($path.$month_dir.$filename);
 			$db->delete_query('xtattachments', 'aid='.$attacharray['aid']);
-			@ignore_user_abort(false);
+			ignore_user_abort(false);
 			return array('error' => $lang->error_uploadfailed.$lang->error_uploadfailed_detail.$lang->error_uploadfailed_lost);
 		}
 	}
-	@my_chmod($new_file, '0644');
-	@ignore_user_abort(false);
+	my_chmod($new_file, '0644');
+	ignore_user_abort(false);
 	
 	if(!empty($img_dimensions) && !empty($tf['fileimgthumbs'])) {
 		// generate thumbnails
-		$attacharray['thumbs'] = xthreads_build_thumbnail($tf['fileimgthumbs'], $attacharray['aid'], $tf['field'], $new_file, $path, $month_dir, $img_dimensions);
+		$attacharray['thumbs'] = xthreads_build_thumbnail($tf['fileimgthumbs'], (int)$attacharray['aid'], $tf['field'], $new_file, $path, $month_dir, $img_dimensions);
 		$attacharray['thumbs']['orig'] = $origdimarray;
 		$attacharray['thumbs'] = serialize($attacharray['thumbs']);
 	}
@@ -302,7 +302,7 @@ function do_upload_xtattachment($attachment, &$tf, $update_attachment=0, $tid=0,
 	return $attacharray;
 }
 
-function xthreads_validate_attachment(&$attachment, &$tf) {
+function xthreads_validate_attachment(array &$attachment, array &$tf): bool|string {
 	global $lang;
 	if(empty($attachment['name']) || $attachment['size'] < 1) {
 		return $lang->error_uploadfailed;
@@ -314,12 +314,12 @@ function xthreads_validate_attachment(&$attachment, &$tf) {
 		return $lang->error_attachtype;
 	if(!empty($tf['filemagic'])) {
 		$validmagic = false;
-		if($fp = @fopen($attachment['tmp_name'], 'rb')) {
+		if($fp = fopen($attachment['tmp_name'], 'rb')) {
 			$startbuf = fread($fp, 255); // since it's impossible to exceed this amount in the field (yes, it's dirty, lol)
 			fclose($fp);
 			foreach($tf['filemagic'] as &$magic) {
 				if(xthreads_empty($magic)) continue;
-				if(substr($startbuf, 0, strlen($magic)) == $magic) {
+				if(str_starts_with($startbuf, $magic)) {
 					$validmagic = true;
 					break;
 				}
@@ -334,10 +334,10 @@ function xthreads_validate_attachment(&$attachment, &$tf) {
 	return false; // no error
 }
 
-function &xthreads_build_thumbnail($thumbdims, $aid, $fieldname, $filename, $path, $month_dir, $img_dimensions=null) {
+function &xthreads_build_thumbnail(array $thumbdims, int $aid, string $fieldname, string $filename, string $path, string $month_dir, ?array $img_dimensions=null): array {
 	if(empty($img_dimensions)) {
-		//$img_dimensions = @getimagesize($path.$month_dir.$filename);
-		$img_dimensions = @getimagesize($filename);
+		//$img_dimensions = getimagesize($path.$month_dir.$filename);
+		$img_dimensions = getimagesize($filename);
 	}
 	$update_thumbs = array('orig' => array('w' => $img_dimensions[0], 'h' => $img_dimensions[1], 'type' => $img_dimensions[2]));
 	if(is_array($img_dimensions)) {
@@ -346,7 +346,7 @@ function &xthreads_build_thumbnail($thumbdims, $aid, $fieldname, $filename, $pat
 			$destname = basename(substr($filename, 0, -6).$dims.'.thumb');
 			if($complex) {
 				require_once MYBB_ROOT.'inc/xthreads/xt_image.php';
-				$img = new XTImageTransform;
+				$img = new XTImageTransform();
 				if($img->_load($filename)) {
 					// run filter chain
 					$filterfunc($dims, $img);
@@ -379,7 +379,7 @@ function &xthreads_build_thumbnail($thumbdims, $aid, $fieldname, $filename, $pat
 				}
 				else { // image is small (hopefully), just copy it over
 					// TODO: maybe use hardlink instead?
-					@copy($filename, $path.$month_dir.$destname);
+					copy($filename, $path.$month_dir.$destname);
 					$update_thumbs[$dims] = array('w' => $img_dimensions[0], 'h' => $img_dimensions[1], 'type' => $img_dimensions[2], 'file' => $month_dir.$destname);
 				}
 			}
@@ -396,11 +396,11 @@ function &xthreads_build_thumbnail($thumbdims, $aid, $fieldname, $filename, $pat
 
 // copied from MyBB's fetch_remote_file function, but modified for our needs
 // this will attempt to "smartly" terminate the transfer early if it's going to end up rejected anyway
-function xthreads_fetch_url($url, $max_size=0, $valid_ext='', $valid_magic=array()) {
+function xthreads_fetch_url(string $url, int $max_size=0, string $valid_ext='', array $valid_magic=array()): array {
 	global $lang;
 	if(!isset($lang->xthreads_xtfurlerr_invalidurl)) $lang->load('xthreads');
 	$url = str_replace("\x0", '', $url);
-	$purl = @parse_url($url);
+	$purl = parse_url($url);
 	if(xthreads_empty($purl['host'])) return array('error' => $lang->xthreads_xtfurlerr_invalidurl);
 	
 	// attempt to decode special IP tricks, eg 0x7F.0.0.0 or even 127.000.0.0
@@ -438,7 +438,8 @@ function xthreads_fetch_url($url, $max_size=0, $valid_ext='', $valid_magic=array
 	}
 	// IPv6 version - normalize IPv6 addresses
 	// (regex won't match [::], but we don't need to process that anyway)
-	elseif(substr_count($purl['host'], ':') > 1 && substr_count($purl['host'], ':') < 8 && preg_match('~^\\[(?:[0-9a-f]{1,4}\\:){0,7}(?:\\:\\:?(?:[0-9a-f]{1,4}\\:){0,6})?(?:[0-9a-f]{1,4})\\]$~i', $purl['host']) && strpos($purl['host'], ':::')===false) {
+	elseif(substr_count($purl['host'], ':') > 1 && substr_count($purl['host'], ':') < 8 && preg_match('~^\\[(?:[0-9a-f]{1,4}\\:){0,7}(?:\\:\\:?(?:[0-9a-f]{1,4}\\:){0,6})?(?:[0-9a-f]{1,4})\\]$~i', $purl['host']) &&
+        !str_contains( $purl['host'], ':::')) {
 		$parts = explode(':', strtolower(substr($purl['host'], 1, -1)));
 		// expand double-colon
 		$expand = 8 - count($parts);
@@ -475,7 +476,7 @@ function xthreads_fetch_url($url, $max_size=0, $valid_ext='', $valid_magic=array
 		$purl['host'] = '['.$parts.']';
 	}
 	
-	if(XTHREADS_URL_FETCH_DISALLOW_HOSTS && in_array($purl['host'], array_map('trim', explode(',', XTHREADS_URL_FETCH_DISALLOW_HOSTS))))
+	if(defined('XTHREADS_URL_FETCH_DISALLOW_HOSTS') && XTHREADS_URL_FETCH_DISALLOW_HOSTS && in_array($purl['host'], array_map('trim', explode(',', XTHREADS_URL_FETCH_DISALLOW_HOSTS))))
 		return array('error' => $lang->xthreads_xtfurlerr_badhost);
 	
 	$portmap = array(
@@ -489,17 +490,17 @@ function xthreads_fetch_url($url, $max_size=0, $valid_ext='', $valid_magic=array
 	if(!isset($portmap[$scheme])) return array('error' => $lang->xthreads_xtfurlerr_invalidscheme);
 	if(!$purl['port'])
 		$purl['port'] = $portmap[$scheme];
-	elseif(XTHREADS_URL_FETCH_DISALLOW_PORT && $purl['port'] != $portmap[$scheme])
+	elseif(defined('XTHREADS_URL_FETCH_DISALLOW_PORT') && XTHREADS_URL_FETCH_DISALLOW_PORT && $purl['port'] != $portmap[$scheme])
 		return array('error' => $lang->xthreads_xtfurlerr_badport);
 	
 	$ret = array(
-		'tmp_name' => tempnam(xthreads_get_temp_dir(), mt_rand()),
+		'tmp_name' => tempnam(xthreads_get_temp_dir(), (string)mt_rand()),
 		'name' => basename($purl['path']),
 		'name_disposition' => false,
 		'size' => 0,
 	);
-	@unlink($ret['tmp_name']);
-	if(substr($purl['path'], -1) == '/' || xthreads_empty($ret['name'])) $ret['name'] = 'index.html';
+	unlink($ret['tmp_name']);
+	if(str_ends_with($purl['path'], '/') || xthreads_empty($ret['name'])) $ret['name'] = 'index.html';
 	
 	require_once MYBB_ROOT.'inc/xthreads/xt_urlfetcher.php';
 	$fetcher = getXTUrlFetcher($purl['scheme']);
@@ -507,11 +508,11 @@ function xthreads_fetch_url($url, $max_size=0, $valid_ext='', $valid_magic=array
 		return array('error' => $lang->xthreads_xtfurlerr_nofetcher);
 	}
 	
-	$fp = @fopen($ret['tmp_name'], 'wb');
+	$fp = fopen($ret['tmp_name'], 'wb');
 	if(!$fp) return array('error' => $lang->xthreads_xtfurlerr_cantwrite);
 	
 	xthreads_fetch_url_register_tmp($ret['tmp_name']);
-	@set_time_limit(0);
+	set_time_limit(0);
 	
 	
 	$fetcher->url = $url;
@@ -522,7 +523,9 @@ function xthreads_fetch_url($url, $max_size=0, $valid_ext='', $valid_magic=array
 	
 	$GLOBALS['xtfurl_ret'] =& $ret;
 	$GLOBALS['xtfurl_max_size'] = $max_size;
-	$fetcher->meta_function = 'xthreads_fetch_url_meta';
+	$fetcher->meta_function = function (&$fetcher, &$name, &$val): bool {
+        return xthreads_fetch_url_meta($fetcher, $name, $val);
+    };
 	$GLOBALS['xtfurl_datalen'] = 0;
 	$GLOBALS['xtfurl_magicchecked'] = false;
 	$GLOBALS['xtfurl_validmagic'] =& $valid_magic;
@@ -565,17 +568,17 @@ function xthreads_fetch_url($url, $max_size=0, $valid_ext='', $valid_magic=array
 	
 	fclose($fp);
 	if(!empty($ret['error']))
-		@unlink($ret['tmp_name']);
+		unlink($ret['tmp_name']);
 	else {
-		$ret['size'] = @filesize($ret['tmp_name']);
+		$ret['size'] = filesize($ret['tmp_name']);
 		if($ret['size'] < 1 || empty($ret['name'])) // weird...
-			@unlink($ret['tmp_name']);
+			unlink($ret['tmp_name']);
 	}
 	
-	@set_time_limit(30);
+	set_time_limit(30);
 	return $ret;
 }
-function xthreads_fetch_url_validext(&$name, &$exts) {
+function xthreads_fetch_url_validext(string &$name, string &$exts): bool {
 	if(!xthreads_empty($exts)) {
 		$fn = strtolower($name);
 		foreach(explode('|', strtolower($exts)) as $ext) {
@@ -586,7 +589,7 @@ function xthreads_fetch_url_validext(&$name, &$exts) {
 	}
 	return true;
 }
-function xthreads_fetch_url_validmagic(&$data, &$magic) {
+function xthreads_fetch_url_validmagic(string &$data, string &$magic): bool {
 	if(empty($magic)) return true;
 	foreach($magic as &$m) {
 		if($m && substr($data, 0, strlen($m)) == $m) {
@@ -596,7 +599,7 @@ function xthreads_fetch_url_validmagic(&$data, &$magic) {
 	return false;
 }
 
-function xthreads_fetch_url_meta(&$fetcher, &$name, &$val) {
+function xthreads_fetch_url_meta(XTUrlFetcher &$fetcher, string &$name, null|bool|string &$val): bool {
 	global $xtfurl_ret;
 	switch($name) {
 		case 'retcode':
@@ -619,7 +622,7 @@ function xthreads_fetch_url_meta(&$fetcher, &$name, &$val) {
 	}
 	return true;
 }
-function xthreads_fetch_url_write(&$fetcher, &$data) {
+function xthreads_fetch_url_write(\XTUrlFetcher_Socket &$fetcher, string &$data): bool {
 	$len = strlen($data);
 	global $xtfurl_datalen, $xtfurl_magicchecked, $xtfurl_ret;
 	
@@ -686,7 +689,7 @@ function xthreads_fetch_url_write(&$fetcher, &$data) {
 
 
 // these functions ensure that temp files are cleaned up if the user aborts the connection
-function xthreads_fetch_url_register_tmp($name) {
+function xthreads_fetch_url_register_tmp(string $name): void {
 	global $xtfurl_tmpfiles;
 	if(!is_array($xtfurl_tmpfiles)) {
 		$xtfurl_tmpfiles = array();
@@ -694,24 +697,24 @@ function xthreads_fetch_url_register_tmp($name) {
 	}
 	$xtfurl_tmpfiles[$name] = 1;
 }
-function xthreads_fetch_url_tmp_shutdown() {
+function xthreads_fetch_url_tmp_shutdown(): void {
 	if(!connection_aborted()) return;
 	global $xtfurl_tmpfiles;
 	foreach($xtfurl_tmpfiles as $name => $foo) {
-		@unlink($name); // should always succeed (hopefully)...
+		unlink($name); // should always succeed (hopefully)...
 	}
 }
 
 if(!function_exists('ctype_xdigit')) {
-	function ctype_xdigit($s) {
+	function ctype_xdigit($s): bool {
 		return (bool)preg_match('~^[0-9a-fA-F]+$~', $s);
 	}
 }
-function xthreads_get_temp_dir() {
+function xthreads_get_temp_dir(): string {
 	if(ini_get('safe_mode') == 1 || strtolower(ini_get('safe_mode')) == 'on')
 		// safemode - fallback to cache dir
 		return realpath(MYBB_ROOT.'cache/');
-	elseif(function_exists('sys_get_temp_dir') && ($tmpdir = sys_get_temp_dir()) && @is_dir($tmpdir) && is_writable($tmpdir))
+	elseif(function_exists('sys_get_temp_dir') && ($tmpdir = sys_get_temp_dir()) && is_dir($tmpdir) && is_writable($tmpdir))
 		return realpath($tmpdir);
 	elseif(!function_exists('sys_get_temp_dir')) {
 		// PHP < 5.2.1, try to find a temp dir
@@ -739,7 +742,7 @@ function xthreads_get_temp_dir() {
 			$dirs[] = '/tmp/';
 		}
 		foreach($dirs as &$dir) {
-			if(@is_dir($dir) && is_writable($dir))
+			if(is_dir($dir) && is_writable($dir))
 				return realpath($dir);
 		}
 	}
@@ -747,7 +750,7 @@ function xthreads_get_temp_dir() {
 	return realpath(MYBB_ROOT.'cache/');
 }
 
-function db_ping(&$dbobj) {
+function db_ping(DB_Base &$dbobj): bool {
 	if($dbobj->type == 'mysqli')
 		$func = 'mysqli_ping';
 	else
@@ -755,8 +758,8 @@ function db_ping(&$dbobj) {
 	if(!function_exists($func)) return true; // fallback
 	if(isset($dbobj->db) && is_object($dbobj->db)) return true; // sqlite
 	
-	$ret = @$func($dbobj->read_link);
+	$ret = $func($dbobj->read_link);
 	if($dbobj->write_link !== $dbobj->read_link)
-		$ret = @$func($dbobj->write_link) && $ret;
+		$ret = $func($dbobj->write_link) && $ret;
 	return $ret;
 }

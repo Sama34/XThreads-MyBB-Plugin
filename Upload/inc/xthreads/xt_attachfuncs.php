@@ -4,19 +4,19 @@ defined('MYBB_ROOT') or die('This file cannot be accessed directly.');
 // saves us from including inc/functions.php, and gets around quirky MyBB IP functions
 // returns it as an 'iplong'
 // this function only works with IPv4
-function xthreads_get_ip() {
+function xthreads_get_ip(): int {
 	// okay, we have an implicit level of trust on this, but ideally, those proxying connections really should be setting REMOTE_ADDR
 	foreach(array('REMOTE_ADDR', 'HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'HTTP_REAL_IP') as $ipfield) {
 		if(!isset($_SERVER[$ipfield])) continue;
 		$ip = ip2long($_SERVER[$ipfield]);
 		// check for proxy addresses
-		if($ip && !xthreads_ip_is_internal($ip))
+		if($ip !== false && !xthreads_ip_is_internal($ip))
 			return $ip;
 	}
-	return ip2long($_SERVER['REMOTE_ADDR']); // fallback
+	return (int)ip2long($_SERVER['REMOTE_ADDR']); // fallback
 }
 
-function xthreads_ip_is_internal($ip) {
+function xthreads_ip_is_internal(int $ip): bool {
 	static $internal_masks = null;
 	if(!isset($internal_masks)) $internal_masks = array(
 		// address => subnet mask; from http://en.wikipedia.org/wiki/Reserved_IP_addresses
@@ -36,15 +36,16 @@ function xthreads_ip_is_internal($ip) {
 
 // generate secret hash to mask random file hash with
 // @param: time period offset, we store whether the number was odd or even, and adapt accordingly
-function xthreads_attach_hash(&$odd=false) {
+function xthreads_attach_hash(false|int &$odd=false): int {
 	static $secret=null;
 	if(!isset($secret)) {
 		if(isset($GLOBALS['mybb']->config['database']['password']))
 			$config =& $GLOBALS['mybb']->config;
 		else {
-			@include MYBB_ROOT.'inc/config.php';
+			include MYBB_ROOT.'inc/config.php';
 		}
-		$secret = md5(substr(md5($config['database']['database'].','.$config['database']['password']), 0, 12).__FILE__);
+        if(isset($config))
+		    $secret = md5(substr(md5($config['database']['database'].','.$config['database']['password']), 0, 12).__FILE__);
 		unset($config);
 	}
 	$key = $secret;
@@ -62,7 +63,7 @@ function xthreads_attach_hash(&$odd=false) {
 }
 
 // these two functions assume input is hex encoded
-function xthreads_attach_encode_hash($hash) {
+function xthreads_attach_encode_hash(string $hash): string {
 	$hash = hexdec($hash);
 	$odd = false;
 	$hash ^= xthreads_attach_hash($odd);
@@ -71,7 +72,7 @@ function xthreads_attach_encode_hash($hash) {
 		if($odd) $hash .= '0';
 	return $hash;
 }
-function xthreads_attach_decode_hash($hash) {
+function xthreads_attach_decode_hash(string $hash): string {
 	$odd = strlen($hash) - 8;
 	$hash = hexdec(substr($hash, 0, 8));
 	$hash ^= xthreads_attach_hash($odd);

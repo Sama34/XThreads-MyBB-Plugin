@@ -2,11 +2,11 @@
 if(!defined('IN_MYBB'))
 	die('This file cannot be accessed directly.');
 
-function xthreads_search() {
+function xthreads_search(): void {
 	global $db, $threadfield_cache;
 	$threadfield_cache = xthreads_gettfcache();
 	if(!empty($threadfield_cache)) {
-		function xthreads_search_dbhook(&$s, &$db) {
+		function xthreads_search_dbhook(string &$s, DB_Base &$db): void {
 			global $threadfield_cache;
 			
 			$fields = '';
@@ -44,14 +44,14 @@ function xthreads_search() {
 	$plugins->add_hook('search_results_thread', 'xthreads_search_result_thread');
 }
 
-function xthreads_search_result(&$data, $tplname) {
+function xthreads_search_result(array &$data, string $tplname): void {
 	global $threadfields, $threadfield_cache, $forumcache, $mybb;
 	
 	// need to set these variables before doing threadfields stuff!
 	$data['threaddate'] = my_date($mybb->settings['dateformat'], $data['dateline']);
 	$data['threadtime'] = my_date($mybb->settings['timeformat'], $data['dateline']);
-	xthreads_set_threadforum_urlvars('thread', $data['tid']);
-	xthreads_set_threadforum_urlvars('forum', $data['fid']);
+	xthreads_set_threadforum_urlvars('thread', (int)$data['tid']);
+	xthreads_set_threadforum_urlvars('forum', (int)$data['fid']);
 	
 	if(!empty($threadfield_cache)) {
 		// make threadfields array
@@ -74,10 +74,10 @@ function xthreads_search_result(&$data, $tplname) {
 	// template hack
 	xthreads_portalsearch_cache_hack($GLOBALS['forum_tpl_prefixes'][$data['fid']], $tplname);
 }
-function xthreads_search_result_post() {
+function xthreads_search_result_post(): void {
 	xthreads_search_result($GLOBALS['post'], 'search_results_posts_post');
 }
-function xthreads_search_result_thread() {
+function xthreads_search_result_thread(): void {
 	global $thread;
 	xthreads_search_result($thread, 'search_results_threads_thread');
 	
@@ -109,7 +109,7 @@ function xthreads_search_result_thread() {
 }
 
 
-function xthreads_portal() {
+function xthreads_portal(): void {
 	global $threadfield_cache, $mybb;
 	$threadfield_cache = xthreads_gettfcache();
 	
@@ -150,7 +150,7 @@ function xthreads_portal() {
 }
 
 
-function xthreads_portal_announcement() {
+function xthreads_portal_announcement(): void {
 	static $doneinit = false;
 	
 	global $threadfield_cache, $announcement, $threadfields, $forum_tpl_prefixes;
@@ -172,8 +172,8 @@ function xthreads_portal_announcement() {
 	// following two lines not needed as we have $anndate and $anntime
 	//$announcement['threaddate'] = my_date($mybb->settings['dateformat'], $announcement['dateline']);
 	//$announcement['threadtime'] = my_date($mybb->settings['timeformat'], $announcement['dateline']);
-	xthreads_set_threadforum_urlvars('thread', $announcement['tid']);
-	xthreads_set_threadforum_urlvars('forum', $announcement['fid']);
+	xthreads_set_threadforum_urlvars('thread', (int)$announcement['tid']);
+	xthreads_set_threadforum_urlvars('forum', (int)$announcement['fid']);
 	
 	if(!empty($threadfield_cache)) {
 		// make threadfields array
@@ -203,7 +203,7 @@ function xthreads_portal_announcement() {
 	}
 }
 
-function xthreads_portalsearch_cache_hack($tplpref, $tplname) {
+function xthreads_portalsearch_cache_hack(string $tplpref, string $tplname): void {
 	$tplcache =& $GLOBALS['templates']->cache;
 	if(!xthreads_empty($tplpref) && isset($tplcache[$tplpref.$tplname])) {
 		if(!isset($tplcache['backup_'.$tplname.'_backup__']))
@@ -214,7 +214,7 @@ function xthreads_portalsearch_cache_hack($tplpref, $tplname) {
 		$tplcache[$tplname] =& $tplcache['backup_'.$tplname.'_backup__'];
 }
 
-function xthreads_wol_patch(&$a) {
+function xthreads_wol_patch(array &$a): void {
 	global $lang, $thread_fid_map;
 	global $forums, $threads, $posts, $attachments;
 	$langargs = array();
@@ -261,7 +261,7 @@ function xthreads_wol_patch(&$a) {
 		*/
 	}
 	
-	if(!$fid) return;
+	if(empty($fid)) return;
 	global $forumcache;
 	if(!is_array($forumcache)) $forumcache = $GLOBALS['cache']->read('forums');
 	$wolstr =& $forumcache[$fid]['xthreads_wol_'.$activity];
@@ -276,7 +276,7 @@ function xthreads_wol_patch(&$a) {
 	
 }
 
-function xthreads_wol_patch_init(&$ua) {
+function xthreads_wol_patch_init(array &$ua): void {
 	switch($ua['activity']) {
 		case 'attachment':
 		case 'newreply':
@@ -348,7 +348,7 @@ function xthreads_wol_patch_init(&$ua) {
 }
 
 
-function xthreads_fix_stats() {
+function xthreads_fix_stats(): void {
 	global $cache;
 	function &xthreads_fix_stats_read($stats, $hard) {
 		static $fix = null;
@@ -382,20 +382,20 @@ function xthreads_fix_stats() {
 	');
 }
 
-function xthreads_fix_stats_index() {
+function xthreads_fix_stats_index(): void {
 	if($GLOBALS['mybb']->settings['showindexstats'])
 		xthreads_fix_stats();
 }
-function xthreads_fix_stats_portal() {
+function xthreads_fix_stats_portal(): void {
 	if($GLOBALS['mybb']->settings['portal_showstats'])
 		xthreads_fix_stats();
 }
-function xthreads_fix_stats_stats() {
+function xthreads_fix_stats_stats(): void {
 	xthreads_fix_stats();
 	// re-read the stats
 	$GLOBALS['stats'] = $GLOBALS['cache']->read('stats');
 }
-function xthreads_fix_stats_usercp() {
+function xthreads_fix_stats_usercp(): void {
 	if(empty($GLOBALS['mybb']->input['action']))
 		xthreads_fix_stats();
 }
@@ -404,7 +404,7 @@ function xthreads_fix_stats_usercp() {
 
 // modified version of xthreads_breadcrumb_hack()
 // because printthread.php just has to do things differently...
-function xthreads_breadcrumb_hack_printthread() {
+function xthreads_breadcrumb_hack_printthread(): void {
 	global $pforumcache;
 	//if(!is_array($pforumcache)) {
 	// need to override because we want the 'xthreads_hidebreadcrumb' field

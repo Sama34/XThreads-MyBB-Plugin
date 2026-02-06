@@ -286,7 +286,7 @@ if(XTHREADS_INSTALLED_VERSION < 1.60) {
 	$db->write_query('UPDATE `'.$db->table_prefix.'templates` SET title=CONCAT(SUBSTRING(title, 0, -21), "post_threadfields_inputrow") WHERE title LIKE "%threadfields_inputrow"');
 	// global -> master template conversion
 	$newtpl = xthreads_new_templates(); // WARNING: if templates change, this could get funky
-	function xtu_normalize_template($s) {
+	function xtu_normalize_template(string $s): array {
 		return str_replace(' />', '/>', strtr( // remove spaces around tags
 			preg_replace('~\s+~', ' ', trim($s)) // remove multiple spaces
 		, array('> '=>'>', ' <'=>'<')));

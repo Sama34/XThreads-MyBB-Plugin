@@ -5,30 +5,40 @@ if(!defined('IN_MYBB'))
 /**
  * Abstract class/interface to handle URL fetching
  */
-/*abstract*/ class XTUrlFetcher {
+abstract class XTUrlFetcher {
+    /**
+     * Optional preferred character set to send via Accept header
+     */
+    public ?string $charset;
+
+    /**
+     * Optional preferred language set to send via Accept header
+     */
+    public ?string $lang;
+
 	/**
 	 * URL to fetch
 	 */
-	var $url;
+    public string $url;
 	/**
 	 * Timeout in seconds
 	 */
-	var $timeout = 30;
-	
+    protected int $timeout = 30;
+
 	/**
 	 * Number of redirects (Location header) to follow.  0 to disable.
 	 * Doesn't work properly with cURL fetcher
 	 */
-	var $follow_redir = 5;
+    protected int $follow_redir = 5;
 	/**
 	 * Contents of Referrer HTTP header
 	 */
-	var $referer=null;
+    protected ?string $referer = null;
 	/**
 	 * Contents of User-Agent HTTP header
 	 */
-	var $user_agent=null;
-	
+    protected ?string $user_agent = null;
+
 	/**
 	 * Callback function to send meta information to; not guaranteed to be called, and values received shouldn't be completely trusted
 	 * Should accept 3 arguments: this object, meta name and value
@@ -39,66 +49,68 @@ if(!defined('IN_MYBB'))
 	 *  - type: sent MIME type (HTTP Content-Type header)
 	 * Should return true if everything is well, false to abort the transfer
 	 */
-	var $meta_function=null;
+
+    /** @var callable */
+    public mixed $meta_function = null;
 	/**
 	 * Callback function to process chunks of body data; if not set, will return all data on fetch() call
 	 * Should accept two arguments: this object and data
 	 *  -> Note that although the variables are passed as references (for speed purposes), they should NOT be modified
 	 * Should return true if everything is well, false to abort
 	 */
-	var $body_function=null;
-	
+    public ?string $body_function = null;
+
+    public ?string $name;
+
 	/**
-	 * Error number and string
-	 */
-	/*protected*/ var $_errno=null;
-	/*protected*/ var $_errstr=null;
-	
-	/**
-	 * Whether or not connection was aborted by calling app
+	 * Whether connection was aborted by calling app
 	 * Should not be written to externally
 	 */
-	var $aborted=false;
-	
+    private bool $aborted = false;
+
+    protected ?int $errno;
+
+    protected ?string $errstr;
+
 	/**
 	 * Whether this fetcher can be used
-	 * @return boolean true if fetcher can be used
+	 * @return bool true if fetcher can be used
 	 */
 	//abstract static function available();
-	
+
 	/**
 	 * Free allocated resources
 	 */
-	function close() {}
-	function __destruct() {
+    public function close(): void {}
+    private function __destruct() {
 		$this->close();
 	}
-	
-	/**
-	 * Fetch $url
-	 * @return true if successful, false if not, and null if aborted
-	 *         if body_function not supplied, will return fetched data
-	 */
-	//abstract function fetch();
-	
+
+    /**
+     * Fetch $url
+     * @return bool|string|null if successful, false if not, and null if aborted
+     *         if body_function not supplied, will return fetched data
+     */
+    abstract public function fetch(): null|bool|string;
+
 	/**
 	 * Set $referer based on $url; uses the host of $url as the referer
 	 */
-	function setRefererFromUrl() {
+    public function setRefererFromUrl(): void {
 		$purl = parse_url($this->url);
 		$this->referer = $purl['scheme'].'://'.$purl['host'].'/';
 	}
-	
+
 	/**
 	 * Generate an array of headers; does not include Host or GET header
 	 */
-	/*protected*/ function &_generateHeaders() {
+    protected function &_generateHeaders(): array {
 		$headers = array(
 			'Connection: close',
 			'Accept: */*',
 		);
 		// TODO: follow_redir, encoding
-		
+
 		if(isset($this->user_agent))
 			$headers[] = 'User-Agent: '.$this->user_agent;
 		if(isset($this->charset))
@@ -107,17 +119,17 @@ if(!defined('IN_MYBB'))
 			$headers[] = 'Accept-Language: '.$this->lang.';q=0.5, *;q=0.3';
 		if(isset($this->referer))
 			$headers[] = 'Referrer: '.$this->referer;
-		
+
 		return $headers;
 	}
-	
+
 	/**
-	 * Processes a HTTP header, and calls the meta function if necessary
+	 * Processes an HTTP header, and calls the meta function if necessary
 	 * @return false to abort, true otherwise
 	 */
-	/*protected*/ function _processHttpHeader($header) {
+	protected function _processHttpHeader(string $header): bool {
 		if(!isset($this->meta_function)) return true;
-		
+
 		$result = self::_processHttpHeader_parse($header);
 		if(empty($result)) return true;
 		foreach($result as $mname => &$mdata) {
@@ -126,14 +138,16 @@ if(!defined('IN_MYBB'))
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
-	/**
-	 * Parse info from HTTP header
-	 * @return array of info retrieved, or null if nothing retrieved
-	 */
-	/*protected*/ static function _processHttpHeader_parse(&$header) {
+
+    /**
+     * Parse info from HTTP header
+     * @param string $header
+     * @return array|null of info retrieved, or null if nothing retrieved
+     */
+	private static function _processHttpHeader_parse(string &$header): ?array {
 		$header = trim($header);
 		$p = strpos($header, ':');
 		if(!$p) {
@@ -172,9 +186,10 @@ if(!defined('IN_MYBB'))
 		}
 		return null;
 	}
-	
+
 	// since fread'ing won't necessarily fill the requested buffer size...
-	/*protected*/ static function &fill_fread(&$fp, $len) {
+    /** @var resource $fp */
+	protected static function &fill_fread(&$fp, int $len): string {
 		//$fill = 0;
 		$ret = '';
 		while(!feof($fp) && $len > 0) {
@@ -184,14 +199,14 @@ if(!defined('IN_MYBB'))
 		}
 		return $ret;
 	}
-	
+
 	/**
 	 * Get error code/message
-	 * @param [out] variable to receive error code
+     * @param string|null $code variable to receive error code
 	 * @return error message
 	 *         special messages are 'cantwritesocket', 'headernotfound' and 'urlopenfailed'
 	 */
-	function getError(&$code=null) {
+	public function getError(?string &$code=null): string {
 		$code = $this->errno;
 		return $this->errstr;
 	}
@@ -204,25 +219,34 @@ class XTUrlFetcher_Curl extends XTUrlFetcher {
 	/**
 	 * Internal cURL resource handle
 	 */
-	/*private*/ var $_ch;
-	/*private*/ var $_redirectUrl;
-	/*private*/ var $_headers;
+	private  CurlHandle|false $_ch;
+	private string|false $_redirectUrl;
+	private ?array $_headers;
 	
-	/*const*/ var $name = 'cURL';
-	
-	static function available($scheme='') {
-		return (!$scheme || $scheme != 'data') && function_exists('curl_init');
+	public ?string $name = 'cURL';
+
+    private ?string $referrer;
+
+    /**
+     * Whether connection was aborted by calling app
+     * Should not be written to externally
+     */
+    private bool $aborted = false;
+
+     public static function available(string $scheme=''): bool {
+		return ($scheme != 'data') && function_exists('curl_init');
 	}
-	
-	function XTUrlFetcher_Curl() {
+
+    public function XTUrlFetcher_Curl() {
 		$this->_ch = curl_init();
 	}
-	function close() {
+    public function close(): void
+    {
 		if(isset($this->_ch))
-			@curl_close($this->_ch); // curl_close may not succeed if called within callback
+			curl_close($this->_ch); // curl_close may not succeed if called within callback
 	}
-	
-	function fetch() {
+
+    public function fetch(): null|bool|string {
 		curl_setopt($this->_ch, CURLOPT_URL, $this->url);
 		curl_setopt($this->_ch, CURLOPT_HEADER, false);
 		curl_setopt($this->_ch, CURLOPT_TIMEOUT, $this->timeout);
@@ -231,7 +255,7 @@ class XTUrlFetcher_Curl extends XTUrlFetcher {
 		if(isset($this->referer))
 			curl_setopt($this->_ch, CURLOPT_REFERER, $this->referrer);
 		curl_setopt($this->_ch, CURLOPT_ENCODING, '');
-		
+
 		if(isset($this->meta_function)) {
 			// can only use this if http/s request
 			if(strtolower(substr($this->url, 0, 4)) == 'http')
@@ -242,8 +266,10 @@ class XTUrlFetcher_Curl extends XTUrlFetcher {
 			curl_setopt($this->_ch, CURLOPT_WRITEFUNCTION, array($this, 'curl_body_func'));
 		} else
 			curl_setopt($this->_ch, CURLOPT_RETURNTRANSFER, true);
-		
-		// because cURL's auto redirection won't work for us (seems to be incompatible with a header function), we have to emulate it
+
+        $success = false;
+
+        // because cURL's auto redirection won't work for us (seems to be incompatible with a header function), we have to emulate it
 		for($i=0; $i<$this->follow_redir; ++$i) {
 			$this->_redirectUrl = false;
 			$this->_headers = array();
@@ -255,7 +281,7 @@ class XTUrlFetcher_Curl extends XTUrlFetcher {
 			$this->url = $this->_redirectUrl;
 			curl_setopt($this->_ch, CURLOPT_URL, $this->url);
 		}
-		// will execute if body function not set (or no body returned?)
+		// will execute if body function not set (or nobody returned?)
 		if(!empty($this->_headers)) {
 			foreach($this->_headers as $h)
 				if(!$this->_processHttpHeader($h)) {
@@ -268,14 +294,14 @@ class XTUrlFetcher_Curl extends XTUrlFetcher {
 		else
 			return $success;
 	}
-	
-	function getError(&$code=null) {
+
+    public function getError(?string &$code=null): string {
 		$this->errno = curl_errno($this->_ch);
 		$this->errstr = curl_error($this->_ch);
 		return parent::getError($code);
 	}
-	
-	function curl_header_func(&$ch, $header) {
+
+    private function curl_header_func(CurlHandle &$ch, string $header): int {
 		$theader = trim($header);
 		// intercept redirect header for our redirect emulation
 		if($this->follow_redir && strtolower(substr($theader, 0, 9)) == 'location:') {
@@ -294,7 +320,7 @@ class XTUrlFetcher_Curl extends XTUrlFetcher {
 			return 0;
 		}*/
 	}
-	function curl_body_func(&$ch, $data) {
+    private function curl_body_func(CurlHandle &$ch, string $data): int {
 		if(!empty($this->_headers)) {
 			foreach($this->_headers as $h)
 				if(!$this->_processHttpHeader($h)) {
@@ -319,27 +345,25 @@ class XTUrlFetcher_Curl extends XTUrlFetcher {
  * Fetch URL through Sockets
  */
 class XTUrlFetcher_Socket extends XTUrlFetcher {
-	/**
-	 * Optional preferred character set to send via Accept header
-	 */
-	var $charset;
-	/**
-	 * Optional preferred language set to send via Accept header
-	 */
-	var $lang;
 	
-	/*const*/ var $name = 'Sockets';
+	public ?string $name = 'Sockets';
+
+    /**
+     * Whether connection was aborted by calling app
+     * Should not be written to externally
+     */
+    private bool $aborted = false;
 	
-	static function available($scheme='') {
+	public static function available($scheme=''): bool {
 		return (!$scheme || $scheme == 'http' || $scheme == 'https') && function_exists('fsockopen');
 	}
-	
-	function fetch() {
+
+    public function fetch(): null|bool|string {
 		$redirs = $this->follow_redir;
 		$url = $this->url;
 		do {
 			$redirect = false;
-			$purl = @parse_url($url);
+			$purl = parse_url($url);
 			if(empty($purl) || !isset($purl['host'])) {
 				$this->errno = 0;
 				$this->errstr = 'invalidurl';
@@ -350,12 +374,12 @@ class XTUrlFetcher_Socket extends XTUrlFetcher {
 			if(!empty($purl['query']))
 				$purl['path'] .= '?'.$purl['query'];
 			if(!$purl['port']) $purl['port'] = ($purl['scheme']=='https' ? 443:80);
-			if(!($fr = @fsockopen(($purl['scheme']=='https'?'ssl://':'').$purl['host'], $purl['port'], $errno, $errstr, $this->timeout))) {
+			if(!($fr = fsockopen(($purl['scheme']=='https'?'ssl://':'').$purl['host'], $purl['port'], $errno, $errstr, $this->timeout))) {
 				$this->errno = $errno;
 				$this->errstr = $errstr;
 				return false;
 			}
-			@stream_set_timeout($fr, $this->timeout);
+			stream_set_timeout($fr, $this->timeout);
 			$headers = array_merge(array(
 				'GET '.$purl['path'].' HTTP/1.1',
 				'Host: '.$purl['host'],
@@ -363,7 +387,7 @@ class XTUrlFetcher_Socket extends XTUrlFetcher {
 			
 			$headers[] = "\r\n";
 			
-			if(!@fwrite($fr, implode("\r\n", $headers))) {
+			if(!fwrite($fr, implode("\r\n", $headers))) {
 				$this->errno = 0;
 				$this->errstr = 'cantwritesocket';
 				fclose($fr);
@@ -373,6 +397,8 @@ class XTUrlFetcher_Socket extends XTUrlFetcher {
 			$databuf = ''; // returned string if no body_function defined
 			$doneheaders = $chunked = false;
 			while(!feof($fr)) {
+                $data = '';
+
 				if(!$doneheaders) {
 					$data = self::fill_fread($fr, 16384);
 					$len = strlen($data);
@@ -444,14 +470,20 @@ class XTUrlFetcher_Socket extends XTUrlFetcher {
  * Fetch URL through PHP fopen
  */
 class XTUrlFetcher_Fopen extends XTUrlFetcher {
-	var $name = 'fopen';
-	
-	static function available($scheme='') {
-		return ($scheme == 'data') || @ini_get('allow_url_fopen');
+    public ?string $name = 'fopen';
+
+    /**
+     * Whether connection was aborted by calling app
+     * Should not be written to externally
+     */
+    private bool $aborted = false;
+
+	public static function available($scheme=''): bool {
+		return ($scheme == 'data') || ini_get('allow_url_fopen');
 		// data:// streams don't require allow_url_fopen
 	}
-	
-	function fetch() {
+
+    public function fetch(): null|bool|string {
 		$httpopts = array(
 			'header' => $this->_generateHeaders(),
 			'max_redirects' => $this->follow_redir
@@ -461,21 +493,21 @@ class XTUrlFetcher_Fopen extends XTUrlFetcher {
 			'https' => $httpopts
 		));
 		//if(isset($this->user_agent))
-		//	@ini_set('user_agent', $this->user_agent);
-		if(!($fr = @fopen($this->url, 'rb', false, $context))) {
+		//	ini_set('user_agent', $this->user_agent);
+		if(!($fr = fopen($this->url, 'rb', false, $context))) {
 			$this->errno = 0;
 			$this->errstr = 'urlopenfailed';
 			return false;
 		}
-		@stream_set_timeout($fr, $this->timeout);
+		stream_set_timeout($fr, $this->timeout);
 		
 		// send headers if possible
-		$meta = @stream_get_meta_data($fr);
+		$meta = stream_get_meta_data($fr);
 		if(isset($meta['wrapper_data'])) {
 			// headers are appended, even onto redirects, so first try to find the last redirected-to header
 			$firstHeader = 0;
 			for($i=0, $c=count($meta['wrapper_data']); $i<$c; ++$i)
-				if(substr($meta['wrapper_data'][$i], 0, 7) == 'HTTP/1.')
+				if(str_starts_with($meta['wrapper_data'][$i], 'HTTP/1.'))
 					$firstHeader = $i;
 			foreach(array_slice($meta['wrapper_data'], $firstHeader) as $header) {
 				if(!$this->_processHttpHeader($header)) {
@@ -489,6 +521,7 @@ class XTUrlFetcher_Fopen extends XTUrlFetcher {
 		$databuf = ''; // returned string if no body_function defined
 		while(!feof($fr)) {
 			$len = 0;
+            $data = '';
 			while(!feof($fr) && !$len) {
 				$data = fread($fr, 16384);
 				$len = strlen($data);
@@ -516,18 +549,19 @@ class XTUrlFetcher_Fopen extends XTUrlFetcher {
 
 /**
  * URL fetcher factory method
- * @return a new XTUrlFetcher object, depending on what is available
+ * @param string $scheme
+ * @return ?XTUrlFetcher new XTUrlFetcher object, depending on what is available
  */
-function getXTUrlFetcher($scheme='') {
+function getXTUrlFetcher(string $scheme=''): ?XTUrlFetcher {
 	$scheme = strtolower($scheme);
 	if($p = strpos($scheme, ':'))
 		$scheme = substr($scheme, 0, $p);
 	if(XTUrlFetcher_Curl::available($scheme))
-		return new XTUrlFetcher_Curl;
+		return new XTUrlFetcher_Curl();
 	if(XTUrlFetcher_Socket::available($scheme))
-		return new XTUrlFetcher_Socket;
+		return new XTUrlFetcher_Socket();
 	if(XTUrlFetcher_Fopen::available($scheme))
-		return new XTUrlFetcher_Fopen;
+		return new XTUrlFetcher_Fopen();
 	
 	return null; // nothing can fetch it for us... >_>
 }

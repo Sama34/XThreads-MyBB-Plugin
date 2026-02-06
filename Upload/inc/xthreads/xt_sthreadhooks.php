@@ -3,10 +3,10 @@ if(!defined('IN_MYBB'))
 	die('This file cannot be accessed directly.');
 
 
-function xthreads_showthread() {
+function xthreads_showthread(): void {
 	global $thread, $threadfields, $threadfields_display, $threadfields_display_rows, $templates, $theme, $threadfield_cache;
 	// just do an extra query to grab the threadfields
-	xthreads_get_threadfields($thread['tid'], $threadfields, false, $thread);
+	xthreads_get_threadfields((int)$thread['tid'], $threadfields, false, $thread);
 	
 	// generate stuff to show on showthread
 	// $threadfield_cache should always be set here
@@ -115,7 +115,7 @@ try { jQuery.fn.editable.defaults.placeholder=""; } catch(x) {}
 	}
 }
 
-function xthreads_showthread_firstpost() {
+function xthreads_showthread_firstpost(): void {
 	global $mybb, $templatelist;
 	// don't do this if using threaded mode
 	if(isset($mybb->input['mode']))
@@ -131,7 +131,7 @@ function xthreads_showthread_firstpost() {
 	$templatelist .= ',showthread_noreplies';
 	$GLOBALS['first_post'] = '';
 	
-	function xthreads_tpl_firstpost_moveout() {
+	function xthreads_tpl_firstpost_moveout(): void {
 		global $posts;
 		static $done = false;
 		if($done) return;
@@ -141,7 +141,7 @@ function xthreads_showthread_firstpost() {
 		// uh... what's this next line here for again?
 		//$GLOBALS['plugins']->remove_hook('showthread_start', 'xthreads_showthread_firstpost_hack');
 	}
-	function xthreads_tpl_firstpost_noreplies() {
+	function xthreads_tpl_firstpost_noreplies(): void {
 		global $posts;
 		// execute this in case there's only one post in the thread
 		xthreads_tpl_firstpost_moveout();
@@ -149,7 +149,7 @@ function xthreads_showthread_firstpost() {
 			eval('$posts = "'.$GLOBALS['templates']->get('showthread_noreplies').'";');
 		}
 	}
-	function xthreads_tpl_postbitrestore() {
+	function xthreads_tpl_postbitrestore(): void {
 		global $templates, $xthreads_postbit_templates, $page;
 		foreach($xthreads_postbit_templates as &$t) {
 			$pbname = substr($t, 7);
@@ -171,7 +171,7 @@ function xthreads_showthread_firstpost() {
 		}
 	}
 	
-	function xthreads_showthread_firstpost_hack() {
+	function xthreads_showthread_firstpost_hack(): void {
 		if(xthreads_tpl_postbithack()) {
 			// *sigh* no other way to do this other than to hack the templates object again... >_>
 			control_object($GLOBALS['templates'], '
@@ -201,7 +201,7 @@ function xthreads_showthread_firstpost() {
 		// but when incremented, becomes 1
 		$GLOBALS['postcounter'] = '-0';
 
-		function xthreads_showthread_firstpost_hack_workaround() {
+		function xthreads_showthread_firstpost_hack_workaround(): array|false {
 			global $mybb;
 
 			if(!empty($mybb->config['xthreads_firstpost_hack'])) {
@@ -241,7 +241,7 @@ function xthreads_showthread_firstpost() {
 }
 
 
-function xthreads_firstpost_tpl_preload() {
+function xthreads_firstpost_tpl_preload(): void {
 	global $xthreads_postbit_templates, $templatelist;
 	$xthreads_postbit_templates = array('postbit','postbit_attachments','postbit_attachments_attachment','postbit_attachments_attachment_unapproved','postbit_attachments_images','postbit_attachments_images_image','postbit_attachments_thumbnails','postbit_attachments_thumbnails_thumbnail','postbit_author_guest','postbit_author_user','postbit_avatar','postbit_away','postbit_classic','postbit_delete_pm','postbit_edit','postbit_editedby','postbit_editedby_editreason','postbit_email','postbit_find','postbit_forward_pm','postbit_gotopost','postbit_groupimage','postbit_icon','postbit_ignored','postbit_inlinecheck','postbit_iplogged_hiden','postbit_iplogged_show','postbit_multiquote','postbit_offline','postbit_online','postbit_pm','postbit_posturl','postbit_profilefield','postbit_profilefield_multiselect','postbit_profilefield_multiselect_value','postbit_purgespammer','postbit_quickdelete','postbit_quickrestore','postbit_quote','postbit_rep_button','postbit_reply_pm','postbit_replyall_pm','postbit_report','postbit_reputation','postbit_reputation_formatted','postbit_reputation_formatted_link','postbit_seperator','postbit_signature','postbit_userstar','postbit_warn','postbit_warninglevel','postbit_warninglevel_formatted','postbit_www');
 	foreach($xthreads_postbit_templates as &$t) {
@@ -249,7 +249,7 @@ function xthreads_firstpost_tpl_preload() {
 	}
 }
 // returns true if postbit_first used at all
-function xthreads_tpl_postbithack() {
+function xthreads_tpl_postbithack(): bool {
 	global $templates, $xthreads_postbit_templates;
 	$modified = false;
 	if(!isset($templates->cache['postbit']))

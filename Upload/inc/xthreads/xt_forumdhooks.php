@@ -2,7 +2,7 @@
 if(!defined('IN_MYBB'))
 	die('This file cannot be accessed directly.');
 
-function xthreads_forumdisplay() {
+function xthreads_forumdisplay(): void {
 	global $db, $threadfield_cache, $fid, $mybb, $tf_filters, $xt_filters, $filters_set, $xthreads_forum_filter_form, $xthreads_forum_filter_args;
 	// the position of the "forumdisplay_start" hook is kinda REALLY annoying...
 	if(!isset($mybb->input['fid'])) return;
@@ -13,7 +13,7 @@ function xthreads_forumdisplay() {
 	if(!isset($mybb->input['sortby']) && !empty($forum['defaultsortby']))
 		$mybb->input['sortby'] = $forum['defaultsortby'];
 	
-	$threadfield_cache = xthreads_gettfcache($fid);
+	$threadfield_cache = xthreads_gettfcache((int)$fid);
 	
 	// prevent Template errors on newer MyBB
 	if(isset($GLOBALS['sortsel'])) {
@@ -41,7 +41,7 @@ function xthreads_forumdisplay() {
 	$use_default_filter = true;
 	if(!empty($threadfield_cache)) {
 		if($show_threads) {
-			function xthreads_forumdisplay_dbhook(&$s, &$db) {
+			function xthreads_forumdisplay_dbhook(string &$s, DB_Base &$db): void {
 				global $threadfield_cache, $fid, $plugins, $threadfields, $xthreads_forum_sort;
 				//if(empty($threadfield_cache)) return;
 				
@@ -328,7 +328,7 @@ function xthreads_forumdisplay() {
 }
 
 // Quick Thread integration function
-function xthreads_forumdisplay_quickthread() {
+function xthreads_forumdisplay_quickthread(): void {
 	$tpl =& $GLOBALS['templates']->cache['forumdisplay_quick_thread'];
 	if(xthreads_empty($tpl)) return;
 	
@@ -343,13 +343,13 @@ function xthreads_forumdisplay_quickthread() {
 	
 	require_once MYBB_ROOT.'inc/xthreads/xt_updatehooks.php';
 	$blank = array();
-	xthreads_input_generate($blank, $edit_fields, $GLOBALS['fid']);
+	xthreads_input_generate($blank, $edit_fields, (int)$GLOBALS['fid']);
 	if(!strpos($tpl, 'enctype="multipart/form-data"'))
 		$tpl = str_replace('<form method="post" ', '<form method="post" enctype="multipart/form-data" ', $tpl);
 	//$tpl = preg_replace('~(\<tbody.*?\<tr\>.*?)(\<tr\>)~is', '$1'.strtr($GLOBALS['extra_threadfields'], array('\\' => '\\\\', '$' => '\\$')).'$2', $tpl, 1);
 }
 
-function xthreads_forumdisplay_sorter() {
+function xthreads_forumdisplay_sorter(): string {
 	global $xthreads_forum_sort, $mybb;
 	if(empty($xthreads_forum_sort)) return '';
 	$GLOBALS['t'] = $xthreads_forum_sort['t'];
@@ -362,7 +362,7 @@ function xthreads_forumdisplay_sorter() {
 	return '"; $orderarrow[\''.strtr($xthreads_forum_sort['sortby'], array('\\' => '', '\'' => '', '"' => '')).'\'] = "';
 }
 
-function xthreads_forumdisplay_filter_input($arg, &$tffilter, &$filter_set) {
+function xthreads_forumdisplay_filter_input(string $arg, string|array &$tffilter, mixed &$filter_set): void {
 	global $xthreads_forum_filter_form, $xthreads_forum_filter_args;
 	if(is_array($tffilter) && count($tffilter) == 1) // single element array -> remove array-ness
 		$tffilter = reset($tffilter);
@@ -414,7 +414,7 @@ function xthreads_forumdisplay_filter_input($arg, &$tffilter, &$filter_set) {
 	}
 }
 
-function &xthreads_forumdisplay_xtfilter_extrainfo($table, $fields, $idfield, &$ids, $blanklang) {
+function &xthreads_forumdisplay_xtfilter_extrainfo(string $table, array $fields, string $idfield, string &$ids, string $blanklang): array {
 	global $db, $lang;
 	$ret = array();
 	$query = $db->simple_select($table, implode(',',$fields), $idfield.' IN ('.$ids.')');
@@ -430,7 +430,7 @@ function &xthreads_forumdisplay_xtfilter_extrainfo($table, $fields, $idfield, &$
 	return $ret;
 }
 
-function xthreads_forumdisplay_filter() {
+function xthreads_forumdisplay_filter(): void {
 	global $mybb, $foruminfo, $tf_filters, $xt_filters, $threadfield_cache;
 	global $visibleonly, $tvisibleonly, $__xt_visibleonly, $db;
 	
@@ -544,7 +544,7 @@ function xthreads_forumdisplay_filter() {
 		}
 		if(!empty($tf_filters)) {
 			// if filtering by thread fields, we need to patch the counting query to include threadfield data and patch the query to reference the correct tables
-			function xthreads_forumdisplay_filter_fixqcond($conditions) {
+			function xthreads_forumdisplay_filter_fixqcond(string $conditions): string {
 				$repl = array();
 				foreach(array(
 					'useronly' => 'tuseronly',
@@ -596,7 +596,7 @@ function xthreads_forumdisplay_filter() {
 	if($xthreads_forum_filter_args) {
 		global $templates, $page_url_xt;
 		// if Google SEO multipage is active, force our URL into that
-		if(function_exists('google_seo_url_cache') && $mybb->settings['google_seo_url_multipage'] && $mybb->settings['google_seo_url_forums']) {
+		if(function_exists('google_seo_url_cache') && defined('GOOGLE_SEO_FORUM') && $mybb->settings['google_seo_url_multipage'] && $mybb->settings['google_seo_url_forums']) {
 			// force cache load
 			$gsurl = google_seo_url_cache(GOOGLE_SEO_FORUM, $foruminfo['fid']);
 			$page_url_xt = $xthreads_forum_filter_args;
@@ -773,7 +773,7 @@ function xthreads_tpl_forumbits(&$forum) {
 		');
 	}
 	
-	xthreads_set_threadforum_urlvars('forum', $forum['fid']);
+	xthreads_set_threadforum_urlvars('forum', (int)$forum['fid']);
 }
 
 function xthreads_global_forumbits_tpl() {

@@ -8,7 +8,7 @@ if(!defined('IN_MYBB'))
 if(function_exists('preg_replace_callback_array')) {
 	// PHP >= 7
 	// note, this will break parsers from PHP < 5.3
-	function xthreads_phptpl_parsetpl(&$ourtpl, $fields=array(), $evalvarname=null)
+	function xthreads_phptpl_parsetpl(string &$ourtpl, array $fields=array(), ?string $evalvarname=null): void
 	{
 		$GLOBALS['__phptpl_if'] = array();
 		$repl = array(
@@ -53,7 +53,7 @@ if(function_exists('preg_replace_callback_array')) {
 		$ourtpl = preg_replace_callback_array($repl, $ourtpl);
 	}
 } else {
-	function xthreads_phptpl_parsetpl(&$ourtpl, $fields=array(), $evalvarname=null)
+	function xthreads_phptpl_parsetpl(string &$ourtpl, array $fields=array(), ?string $evalvarname=null): void
 	{
 		$GLOBALS['__phptpl_if'] = array();
 		if(defined('HHVM_VERSION'))
@@ -101,7 +101,7 @@ if(function_exists('preg_replace_callback_array')) {
 }
 
 
-function xthreads_phptpl_if($s, $e)
+function xthreads_phptpl_if(string $s, string $e): string
 {
 	if($s[0] == '/') {
 		// end if tag
@@ -111,7 +111,7 @@ function xthreads_phptpl_if($s, $e)
 			$suf = ':""'.$suf;
 		return '"'.$suf.')."';
 	} else {
-		$s = strtolower(substr($s, 0, strpos($s, ' ')));
+		$s = strtolower(substr($s, 0, (int)strpos($s, ' ')));
 		if($s == 'if') {
 			$GLOBALS['__phptpl_if'][] = 'i0';
 			return '".(('.$e.')?"';
@@ -129,7 +129,7 @@ function xthreads_phptpl_if($s, $e)
 	}
 }
 
-function _xthreads_phptpl_expr_parse($str, $fields=array()) {
+function _xthreads_phptpl_expr_parse(string $str, array $fields=array()): string {
 	if(!$str && $str !== '0') return '';
 	
 	// unescapes the slashes added by xthreads_sanitize_eval, plus addslashes() (double quote only) during preg_replace()
@@ -138,7 +138,7 @@ function _xthreads_phptpl_expr_parse($str, $fields=array()) {
 	return xthreads_phptpl_expr_parse($str, $fields);
 }
 // for non-eval escaped stuff
-function _xthreads_phptpl_expr_parse2($str, $fields=array()) {
+function _xthreads_phptpl_expr_parse2(string $str, array $fields=array()): string {
 	if(!$str && $str !== '0') return '';
 	
 	// unescapes the slashes added by xthreads_sanitize_eval
@@ -147,18 +147,20 @@ function _xthreads_phptpl_expr_parse2($str, $fields=array()) {
 	return xthreads_phptpl_expr_parse($str, $fields);
 }
 
-function xthreads_phptpl_expr_parse($str, $fields=array())
+function xthreads_phptpl_expr_parse(string $str, array $fields=array()): string
 {
+    $token = '';
+
 	// remove all single quote strings - they mess up all our plans...
 	$strpreg = '~\'(|\\\\\\\\|.*?([^\\\\]|[^\\\\](\\\\\\\\)+))\'~s';
 	if(preg_match_all($strpreg, $str, $squotstr)) {
-		$token = '\'__PHPTPL_PLACEHOLDER_'.md5(mt_rand()).'__\'';
+		$token = '\'__PHPTPL_PLACEHOLDER_'.md5((string)mt_rand()).'__\'';
 		$str = preg_replace($strpreg, $token, $str);
 		$squotstr = $squotstr[0];
 	} else
 		$squotstr = null;
 	
-	// globalise all variables; conveniently will filter out stuff like {VALUE$1}
+	// globalize all variables; conveniently will filter out stuff like {VALUE$1}
 	$str = preg_replace('~\$([a-zA-Z_][a-zA-Z_0-9]*)~', '$GLOBALS[\'$1\']', $str);
 	// won't pick up double variable syntax, eg $$var, or complex variable syntax, eg ${$var}
 	
@@ -188,7 +190,7 @@ function xthreads_phptpl_expr_parse($str, $fields=array())
 }
 
 // also disables heredoc + array/object typecasting + braces in double-quoted strings
-function xthreads_phptpl_is_safe_expression($s)
+function xthreads_phptpl_is_safe_expression(string $s): bool
 {
 	
 	// remove all strings
@@ -225,7 +227,7 @@ function xthreads_phptpl_is_safe_expression($s)
 	
 	// check functions (implicitly blocks variable functions)
 	preg_match_all('~((\$|-\>\s*|[\\\\a-zA-Z0-9_]+\s*\:\:\s*)?[\\\\a-zA-Z0-9_]+)\s*\(~', $check, $matches);
-	$allowed_funcs = xthreads_phptpl_get_allowed_funcs();
+    $allowed_funcs = xthreads_phptpl_get_allowed_funcs();
 	foreach($matches[1] as &$func) {
 		if(!isset($allowed_funcs[strtr($func, array(' '=>'',"\n"=>'',"\r"=>'',"\t"=>''))])) return false;
 	}
@@ -233,11 +235,11 @@ function xthreads_phptpl_is_safe_expression($s)
 	return true;
 }
 
-function &xthreads_phptpl_get_allowed_funcs()
+function xthreads_phptpl_get_allowed_funcs(): array
 {
 	static $allowed_funcs = null;
 	if(!isset($allowed_funcs)) {
-		$allowed_funcs = array_flip(explode("\n", str_replace("\r", '', @file_get_contents(MYBB_ROOT.'inc/xthreads/phptpl_allowed_funcs.txt'))));
+		$allowed_funcs = array_flip(explode("\n", str_replace("\r", '', file_get_contents(MYBB_ROOT.'inc/xthreads/phptpl_allowed_funcs.txt'))));
 	}
 	// hack to allow us to dynamically add more allowable functions (for image thumbnail processing)
 	if(!empty($GLOBALS['phptpl_additional_functions']))
@@ -246,7 +248,7 @@ function &xthreads_phptpl_get_allowed_funcs()
 		return $allowed_funcs;
 }
 
-function xthreads_phptpl_evalphp($str, $end)
+function xthreads_phptpl_evalphp(string $str, mixed $end): string
 {
 	return '".eval(\'ob_start(); ?>'
 		.strtr($str, array('\'' => '\\\'', '\\' => '\\\\'))
@@ -255,7 +257,7 @@ function xthreads_phptpl_evalphp($str, $end)
 
 // replaces a token with an array of replacements
 // copied from Syntax Highlighter plugin
-function xthreads_our_str_replace($find, &$replacements, $subject)
+function xthreads_our_str_replace(string $find, null|array|string &$replacements, string $subject): string
 {
 	$l = strlen($find);
 	// allocate some memory
@@ -271,7 +273,7 @@ function xthreads_our_str_replace($find, &$replacements, $subject)
 	return $new_subject;
 }
 
-function xthreads_allow_php() {
+function xthreads_allow_php(): bool {
 	if(defined('XTHREADS_ALLOW_PHP_THREADFIELDS_ACTIVATION'))
 		return XTHREADS_ALLOW_PHP_THREADFIELDS_ACTIVATION;
 	return defined('XTHREADS_ALLOW_PHP_THREADFIELDS') && (XTHREADS_ALLOW_PHP_THREADFIELDS==1 || (XTHREADS_ALLOW_PHP_THREADFIELDS==2 && function_exists('phptpl_evalphp')));
@@ -279,7 +281,7 @@ function xthreads_allow_php() {
 
 
 
-function xthreads_phptpl_parse_fields($s, $fields, $in_string) {
+function xthreads_phptpl_parse_fields(string $s, array $fields, bool $in_string): string {
 	if(!empty($fields)) {
 		$tr = $ptr = array();
 		$do_value_repl = false;
@@ -312,8 +314,8 @@ function xthreads_phptpl_parse_fields($s, $fields, $in_string) {
 }
 
 
-// sanitises string $s so that we can directly eval it during "run-time" rather than performing sanitisation there
-function xthreads_sanitize_eval(&$s, $fields=array(), $evalvarname=null) {
+// sanitizes string $s so that we can directly eval it during "run-time" rather than performing sanitization there
+function xthreads_sanitize_eval(string &$s, array $fields=array(), ?string $evalvarname=null): void {
 	if(xthreads_empty($s)) {
 		$s = '';
 		return;

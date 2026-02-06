@@ -10,7 +10,7 @@ if(!defined('IN_MYBB'))
 require_once MYBB_ROOT.'inc/xthreads/xt_updatehooks.php';
 
 
-function xthreads_purge_draft() {
+function xthreads_purge_draft(): void {
 	global $mybb, $db;
 	if(empty($mybb->input['deletedraft']) || !is_array($mybb->input['deletedraft'])) return;
 	// unfortunately, we need to grab a list of all the valid tids
@@ -33,7 +33,7 @@ function xthreads_purge_draft() {
 	xthreads_rm_attach_query('tid IN ('.$tidin.')');
 }
 
-function xthreads_delete_thread($tid) {
+function xthreads_delete_thread(int $tid): void {
 	global $db;
 	// awesome thing about this is that it will delete threadfields even if the thread was moved to a different forum
 	$db->delete_query('threadfields_data', 'tid='.$tid);
@@ -41,14 +41,14 @@ function xthreads_delete_thread($tid) {
 	xthreads_rm_attach_query('tid='.$tid);
 }
 
-function xthreads_copy_thread(&$a) {
+function xthreads_copy_thread(array &$a): void {
 	control_db('
 		function insert_query($table, $array) {
 			static $done = false;
 			$ret = parent::insert_query($table, $array);
 			if(!$done) {
 				$done = true;
-				xthreads_duplicate_threadfield_data($this->xthreads_copy_thread_tid, $ret);
+				xthreads_duplicate_threadfield_data((int)$this->xthreads_copy_thread_tid, (int)$ret);
 			}
 			return $ret;
 		}
@@ -60,12 +60,12 @@ function xthreads_copy_thread(&$a) {
 	// or maybe there's a way...
 } */
 
-function xthreads_duplicate_threadfield_data($tid_old, $tid_new) {
+function xthreads_duplicate_threadfield_data(int $tid_old, int $tid_new): void {
 	global $db, $mybb;
-	@ignore_user_abort(true); // not really that good, since cancelling elsewhere will break transaction, but, well, copies might be slow, so...
+	ignore_user_abort(true); // not really that good, since cancelling elsewhere will break transaction, but, well, copies might be slow, so...
 	$tf = $db->fetch_array($db->simple_select('threadfields_data', '*', 'tid='.$tid_old));
 	if(empty($tf)) { // no threadfields set for this thread -> nothing to duplicate
-		@ignore_user_abort(false);
+		ignore_user_abort(false);
 		return;
 	}
 	$tf['tid'] = $tid_new;
@@ -77,7 +77,7 @@ function xthreads_duplicate_threadfield_data($tid_old, $tid_new) {
 		$xta['tid'] = $tid_new;
 		$oldname = xthreads_get_attach_path($xta);
 		$oldpath = dirname($oldname).'/';
-		$xta['attachname'] = substr(md5(uniqid(mt_rand(), true).substr($mybb->post_code, 16)), 12, 8).substr($xta['attachname'], 8);
+		$xta['attachname'] = substr(md5(uniqid((string)mt_rand(), true).substr($mybb->post_code, 16)), 12, 8).substr($xta['attachname'], 8);
 		unset($xta['aid']);
 		$tf[$xta['field']] = $xta['aid'] = xthreads_db_insert('xtattachments', $xta);
 		
@@ -86,7 +86,7 @@ function xthreads_duplicate_threadfield_data($tid_old, $tid_new) {
 		
 		$oldfpref = basename(substr($oldname, 0, -6));
 		$newfpref = basename(substr($newname, 0, -6));
-		if($thumbs = @glob($oldpath.$oldfpref.'*.thumb')) {
+		if($thumbs = glob($oldpath.$oldfpref.'*.thumb')) {
 			foreach($thumbs as &$thumb) {
 				$thumb = basename($thumb);
 				xthreads_hardlink_file($oldpath.$thumb, $newpath.str_replace($oldfpref, $newfpref, $thumb));
@@ -96,11 +96,11 @@ function xthreads_duplicate_threadfield_data($tid_old, $tid_new) {
 	}
 	
 	xthreads_db_insert('threadfields_data', $tf);
-	@ignore_user_abort(false);
+	ignore_user_abort(false);
 }
 
 
-function xthreads_rm_attach_query($where) {
+function xthreads_rm_attach_query(string $where): int {
 	global $db;
 	$has_attach = $successes = 0;
 	$query = $db->simple_select('xtattachments', 'aid,indir,attachname', $where);
@@ -124,30 +124,30 @@ function xthreads_rm_attach_query($where) {
 }
 
 // will try to create a hardlink/copy of a file
-function xthreads_hardlink_file($src, $dest) {
+function xthreads_hardlink_file(string $src, string $dest): bool {
 	if($src == $dest) return false;
-	if(@link($src, $dest)) return true;
-	if(DIRECTORY_SEPARATOR == '\\' && @ini_get('safe_mode') != 'On') {
+	if(link($src, $dest)) return true;
+	if(DIRECTORY_SEPARATOR == '\\' && ini_get('safe_mode') != 'On') {
 		$allow_exec = true;
 		// check if exec() is allowed
-		if(($func_blacklist = @ini_get('suhosin.executor.func.blacklist')) && strpos(','.$func_blacklist.',', ',exec,') !== false)
+		if(($func_blacklist = ini_get('suhosin.executor.func.blacklist')) && str_contains(',' . $func_blacklist . ',', ',exec,'))
 			$allow_exec = false;
-		if(($func_blacklist = @ini_get('disable_functions')) && strpos(','.$func_blacklist.',', ',exec,') !== false)
+		if(($func_blacklist = ini_get('disable_functions')) && str_contains(',' . $func_blacklist . ',', ',exec,'))
 			$allow_exec = false;
 		
 		if($allow_exec) {
 			// try mklink (Windows Vista / Server 2008 and later only)
 			// assuming mklink refers to the correct executable is a little dangerous perhaps, but it should work
-			@unlink($dest); // mklink won't overwrite
-			@exec('mklink /H '.escapeshellarg(str_replace('/', '\\', $src)).' '.escapeshellarg(str_replace('/', '\\', $dest)).' >NUL 2>NUL', $null, $ret);
-			if($ret==0 && @file_exists($dest)) return true;
+			unlink($dest); // mklink won't overwrite
+			exec('mklink /H '.escapeshellarg(str_replace('/', '\\', $src)).' '.escapeshellarg(str_replace('/', '\\', $dest)).' >NUL 2>NUL', $null, $ret);
+			if($ret==0 && file_exists($dest)) return true;
 		}
 	}
 	// fail, resort to copy
-	return @copy($src, $dest);
+	return copy($src, $dest);
 }
 
-function xthreads_moderation() {
+function xthreads_moderation(): void {
 	// try to hook into custom moderation
 	// lovely MyBB provides no custom moderation hook, what gives?
 	$modactions = array(
@@ -213,20 +213,20 @@ function xthreads_moderation() {
 	');
 }
 
-function xthreads_moderation_custom() {
+function xthreads_moderation_custom(): void {
 	//if($tool['type'] != 't') return;
 	if(!isset($GLOBALS['custommod']) || !is_object($GLOBALS['custommod'])) return;
 	
 	control_object($GLOBALS['custommod'], '
 		function execute_thread_moderation($thread_options=array(), $tids=array()) {
 			if($thread_options[\'deletethread\'] != 1)
-				xthreads_moderation_custom_do($tids, $thread_options[\'edit_threadfields\']);
+				xthreads_moderation_custom_do((array)$tids, $thread_options[\'edit_threadfields\'] ?? "");
 			return parent::execute_thread_moderation($thread_options, $tids);
 		}
 	');
 	
 	// this function is executed before copy thread (yay!)
-	function xthreads_moderation_custom_do(&$tids, $editstr) {
+	function xthreads_moderation_custom_do(array &$tids, string $editstr): void {
 		if(!$editstr) return;
 		$edits = array();
 		
@@ -245,7 +245,7 @@ function xthreads_moderation_custom() {
 			if(!isset($threadfields[$kv[0]]) || $threadfields[$kv[0]]['inputtype'] == XTHREADS_INPUT_FILE) continue;
 			// we don't do much validation here as we trust admins, right?
 			
-			// this is just a prelim check (speed optimisation) - we'll need to check this again after evaluating conditionals
+			// this is just a prelim check (speed optimization) - we'll need to check this again after evaluating conditionals
 			$upperv = strtoupper($kv[1]);
 			if(($upperv === '' || $upperv == 'NULL' || $upperv == 'NUL') && $threadfields[$kv[0]]['datatype'] != XTHREADS_DATATYPE_TEXT)
 				$edits[$kv[0]] = null;
@@ -294,7 +294,7 @@ function xthreads_moderation_custom() {
 				}
 			}
 			if(!empty($updates)) {
-				xthreads_db_update_replace('threadfields_data', $updates, 'tid', $thread['tid']);
+				xthreads_db_update_replace('threadfields_data', $updates, 'tid', (int)$thread['tid']);
 			}
 		}
 		$db->free_result($query);

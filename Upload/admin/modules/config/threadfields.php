@@ -3,6 +3,8 @@
 if(!defined('IN_MYBB'))
 	die('This file cannot be accessed directly.');
 
+global $lang, $page, $plugins;
+
 $lang->load('xthreads');
 
 $page->add_breadcrumb_item($lang->custom_threadfields, xthreads_admin_url('config', 'threadfields'));
@@ -20,6 +22,7 @@ $sub_tabs['threadfields_add'] = array(
 	'link' => xthreads_admin_url('config', 'threadfields&amp;action=add')
 );
 
+global $mybb, $db;
 
 if($mybb->input['action'] == 'add')
 {
@@ -81,8 +84,8 @@ if($mybb->input['action'] == 'inline')
 		
 		// delete attachments? - might be a little slow...
 		if(!empty($delattach)) {
-			@ignore_user_abort(true);
-			@set_time_limit(0);
+			ignore_user_abort(true);
+			set_time_limit(0);
 			require_once MYBB_ROOT.'inc/xthreads/xt_modupdhooks.php';
 			xthreads_rm_attach_query('field IN ("'.implode('","', $delattach).'")');
 		}
@@ -111,7 +114,7 @@ if(!$mybb->input['action'])
 
 	$form = new Form(xthreads_admin_url('config', 'threadfields&amp;action=inline'), 'post', 'inline');
 	
-	$table = new Table;
+	$table = new Table();
 	$table->construct_header($lang->threadfields_title);
 	$table->construct_header($lang->threadfields_name, array('width' => '25%'));
 	$table->construct_header($lang->threadfields_inputtype, array('width' => '20%'));
@@ -120,6 +123,8 @@ if(!$mybb->input['action'])
 	$table->construct_header($lang->threadfields_del, array('width' => '2%'));
 
 	// categorize by forums
+    global $cache;
+
 	$forums = $cache->read('forums');
 	$query = $db->query('SELECT `title`,`field`,`editable`,`editable_gids`,`disporder`,`inputtype`,`forums` FROM `'.$db->table_prefix.'threadfields` ORDER BY `forums` ASC, `disporder` ASC');
 	$tf_forum = '-';
@@ -162,7 +167,7 @@ if(!$mybb->input['action'])
 		}
 		$table->construct_cell($lang->$inputtype_lang);
 		if($tf['editable_gids']) {
-			if(!is_array($usergroups)) $usergroups = $cache->read('usergroups');
+			if(empty($usergroups) || !is_array($usergroups)) $usergroups = (array)$cache->read('usergroups');
 			$ugtext = $ugcomma = '';
 			foreach(explode(',', $tf['editable_gids']) as $gid) {
 				$ugtext .= $ugcomma.htmlspecialchars_uni($usergroups[$gid]['title']);
@@ -247,7 +252,7 @@ if(!$mybb->input['action'])
 
 
 
-function threadfields_add_edit_handler(&$tf, $update) {
+function threadfields_add_edit_handler(array &$tf, bool $update): void {
 	global $mybb, $page, $lang, $db, $plugins, $sub_tabs;
 	global $form;
 	
@@ -394,7 +399,7 @@ function threadfields_add_edit_handler(&$tf, $update) {
 		if(!xthreads_empty($mybb->input['textmask'])) {
 			// test for bad regex
 			xthreads_catch_errorhandler();
-			@preg_match('~'.str_replace('~', '\\~', $mybb->input['textmask']).'~si', 'testvalue');
+			preg_match('~'.str_replace('~', '\\~', $mybb->input['textmask']).'~si', 'testvalue');
 			restore_error_handler();
 			if(!empty($GLOBALS['_previous_error'])) {
 				$errmsg =& $GLOBALS['_previous_error'][1];
@@ -451,7 +456,7 @@ function threadfields_add_edit_handler(&$tf, $update) {
 			/* if($mybb->input['inputtype'] == XTHREADS_INPUT_SELECT || $mybb->input['inputtype'] == XTHREADS_INPUT_RADIO) {
 				// maybe we won't do this...
 			} */
-			$mybb->input['datatype'] = min_max($mybb->input['datatype'], XTHREADS_DATATYPE_TEXT, XTHREADS_DATATYPE_FLOAT);
+			$mybb->input['datatype'] = min_max((int)$mybb->input['datatype'], XTHREADS_DATATYPE_TEXT, XTHREADS_DATATYPE_FLOAT);
 		}
 		
 		$mybb->input['fileimage'] = '';
@@ -560,7 +565,9 @@ function threadfields_add_edit_handler(&$tf, $update) {
 				else
 					$new_tf[$field] = $db->escape_string($mybb->input[$field]);
 			}
-			
+
+            $using_long_varchar = false;
+
 			if($mybb->input['inputtype'] == XTHREADS_INPUT_FILE) {
 				if(xthreads_empty($mybb->input['multival']))
 					$fieldtype = xthreads_db_fielddef('int', null, true).' not null default 0';
@@ -734,7 +741,7 @@ function threadfields_add_edit_handler(&$tf, $update) {
 			//XTHREADS_INPUT_FILE_URL => $lang->threadfields_inputtype_file_url,
 		);
 		if($update) { // disable some conversions as they are not possible
-			if(isset($errors['error_invalid_inputtype'])) { // but if invalid type is supplied, don't lock the user in either
+			if(isset($errors['error_invalid_inputtype']) && isset($oldfield['inputtype'])) { // but if invalid type is supplied, don't lock the user in either
 				$inputtype = $oldfield['inputtype'];
 			} else {
 				$inputtype = $data['inputtype'];
@@ -785,8 +792,8 @@ function threadfields_add_edit_handler(&$tf, $update) {
 		if(!is_int(2147483648)) // detect 32-bit PHP
 			$lang->threadfields_filemaxsize_desc .= $lang->threadfields_filemaxsize_desc_2gbwarn;
 		// PHP upload limits
-		$upload_max_filesize = @ini_get('upload_max_filesize');
-		$post_max_size = @ini_get('post_max_size');
+		$upload_max_filesize = ini_get('upload_max_filesize');
+		$post_max_size = ini_get('post_max_size');
 		// TODO: maybe also pull in [ file_uploads, max_file_uploads, max_input_time ] ?
 		if($upload_max_filesize || $post_max_size) {
 			$lang->threadfields_filemaxsize_desc .= '<br /><br />'.$lang->threadfields_filemaxsize_desc_phplimit;
@@ -827,7 +834,7 @@ function threadfields_add_edit_handler(&$tf, $update) {
 		make_form_row('inputvalidate', 'text_area', array('style' => 'font-family: monospace'));
 		
 		if(!is_array($data['editable_values'])) {
-			$ev = @unserialize($data['editable_values']);
+			$ev = unserialize($data['editable_values']);
 			if(is_array($ev))
 				$data['editable_values'] =& $ev;
 		}
@@ -904,7 +911,7 @@ function threadfields_add_edit_handler(&$tf, $update) {
 		make_form_row('dispitemformat', 'text_area', array('style' => 'font-family: monospace'));
 		
 		if(!is_array($data['formatmap'])) {
-			$fm = @unserialize($data['formatmap']);
+			$fm = unserialize($data['formatmap']);
 			if(is_array($fm))
 				$data['formatmap'] =& $fm;
 		}
@@ -1337,10 +1344,10 @@ editValEditor.init();
 	$page->output_footer();
 }
 // returns a number within the range min/max
-function min_max($val, $min, $max) {
+function min_max(int $val, int $min, int $max): int {
 	return min(max($val, $min), $max);
 }
-function make_form_row($n, $it, $opts=array(), $html_append='') {
+function make_form_row(string $n, string $it, $opts=array(), string $html_append=''): void {
 	global $form_container, $form, $lang, $data;
 	$lang_n = 'threadfields_'.$n;
 	$lang_d = 'threadfields_'.$n.'_desc';
@@ -1364,15 +1371,16 @@ function make_form_row($n, $it, $opts=array(), $html_append='') {
 }
 
 // escape text to put into a Javascript string; only needs to handle common stuffs
-function xt_js_str_escape($s) {
+function xt_js_str_escape(string $s): string {
 	return strtr($s, array('\\'=>'\\\\','"'=>'\\"','\''=>'\\\'',
 		"\n"=>'\\n',"\r"=>'\\r',"\t"=>'\\t','<'=>'\\x3C','>'=>'\\x3E'));
 }
 
 // method copied from MyBB 1.6
 //  + bugfix in HTML output
-function xt_generate_group_select($name, $selected=array(), $options=array())
+function xt_generate_group_select(string $name, array|string $selected=array(), array $options=array()): string
 {
+    /* @var \DefaultForm $form */
 	global $cache, $form;
 	if(method_exists($form, 'generate_group_select')) {
 		return $form->generate_group_select($name, $selected, $options);

@@ -3,13 +3,15 @@ if(!defined('IN_MYBB'))
 	die('This file cannot be accessed directly.');
 
 
-define('XTHREADS_VERSION', 1.68);
+const XTHREADS_VERSION = 1.68;
 if(file_exists(MYBB_ROOT.'cache/xthreads.php')) {
 	include_once(MYBB_ROOT.'cache/xthreads.php'); // include defines/settings
 }
 if(!defined('IN_ADMINCP') && file_exists(MYBB_ROOT.'cache/xthreads_evalcache.php')) {
 	include_once MYBB_ROOT.'cache/xthreads_evalcache.php'; // if missing, we'll regenerate only in the AdminCP; weird heuristic, but one would imagine that a visit there is likely if the evalcache stuffs up
 }
+
+global $plugins;
 
 $plugins->add_hook('forumdisplay_start', 'xthreads_forumdisplay_sortlang');
 $plugins->add_hook('forumdisplay_thread', 'xthreads_format_thread_date');
@@ -64,68 +66,68 @@ $plugins->add_hook('usercp_do_drafts_start', 'xthreads_purge_draft', 10, $modupd
 
 
 // uses lower 2 bits
-define('XTHREADS_SANITIZE_HTML', 0);     // plaintext only
-define('XTHREADS_SANITIZE_HTML_NL', 1);  // as above, but allow newlines
-define('XTHREADS_SANITIZE_PARSER', 2);   // run through MyCode
-define('XTHREADS_SANITIZE_NONE', 3);     // no filter
-define('XTHREADS_SANITIZE_MASK', 0x03);
+const XTHREADS_SANITIZE_HTML = 0;     // plaintext only
+const XTHREADS_SANITIZE_HTML_NL = 1;  // as above, but allow newlines
+const XTHREADS_SANITIZE_PARSER = 2;   // run through MyCode
+const XTHREADS_SANITIZE_NONE = 3;     // no filter
+const XTHREADS_SANITIZE_MASK = 0x03;
 
-define('XTHREADS_SANITIZE_PARSER_NL2BR', 0x04);
-define('XTHREADS_SANITIZE_PARSER_NOBADW', 0x08);
-define('XTHREADS_SANITIZE_PARSER_HTML', 0x10);
-define('XTHREADS_SANITIZE_PARSER_MYCODE', 0x20);
-define('XTHREADS_SANITIZE_PARSER_MYCODEIMG', 0x40);
-define('XTHREADS_SANITIZE_PARSER_SMILIES', 0x80);
-define('XTHREADS_SANITIZE_PARSER_VIDEOCODE', 0x100); // 1.6 only, but harmless in 1.4
+const XTHREADS_SANITIZE_PARSER_NL2BR = 0x04;
+const XTHREADS_SANITIZE_PARSER_NOBADW = 0x08;
+const XTHREADS_SANITIZE_PARSER_HTML = 0x10;
+const XTHREADS_SANITIZE_PARSER_MYCODE = 0x20;
+const XTHREADS_SANITIZE_PARSER_MYCODEIMG = 0x40;
+const XTHREADS_SANITIZE_PARSER_SMILIES = 0x80;
+const XTHREADS_SANITIZE_PARSER_VIDEOCODE = 0x100; // 1.6 only, but harmless in 1.4
 
-define('XTHREADS_EDITABLE_ALL', 0);   // editable by all
-define('XTHREADS_EDITABLE_REQ', 1);   // required field; implies editable by all
-define('XTHREADS_EDITABLE_MOD', 2);   // editable by mods
-define('XTHREADS_EDITABLE_ADMIN', 3); // editable by admins only
-define('XTHREADS_EDITABLE_NONE', 4);  // not editable
+const XTHREADS_EDITABLE_ALL = 0;   // editable by all
+const XTHREADS_EDITABLE_REQ = 1;   // required field; implies editable by all
+const XTHREADS_EDITABLE_MOD = 2;   // editable by mods
+const XTHREADS_EDITABLE_ADMIN = 3; // editable by admins only
+const XTHREADS_EDITABLE_NONE = 4;  // not editable
 
-define('XTHREADS_HIDE_INPUT', 0x1);
-define('XTHREADS_HIDE_THREAD', 0x2);
-define('XTHREADS_HIDE_FORUM_SORT', 0x4);
+const XTHREADS_HIDE_INPUT = 0x1;
+const XTHREADS_HIDE_THREAD = 0x2;
+const XTHREADS_HIDE_FORUM_SORT = 0x4;
 
-define('XTHREADS_INPUT_TEXT', 0);
-define('XTHREADS_INPUT_TEXTAREA', 1);
-define('XTHREADS_INPUT_SELECT', 2);
-define('XTHREADS_INPUT_RADIO', 3);
-define('XTHREADS_INPUT_CHECKBOX', 4);
-define('XTHREADS_INPUT_FILE', 5);
-define('XTHREADS_INPUT_FILE_URL', 6);
+const XTHREADS_INPUT_TEXT = 0;
+const XTHREADS_INPUT_TEXTAREA = 1;
+const XTHREADS_INPUT_SELECT = 2;
+const XTHREADS_INPUT_RADIO = 3;
+const XTHREADS_INPUT_CHECKBOX = 4;
+const XTHREADS_INPUT_FILE = 5;
+const XTHREADS_INPUT_FILE_URL = 6;
 
-define('XTHREADS_DATATYPE_TEXT', 0);
-define('XTHREADS_DATATYPE_INT', 1);
-define('XTHREADS_DATATYPE_UINT', 2);
-define('XTHREADS_DATATYPE_BIGINT', 3);
-define('XTHREADS_DATATYPE_BIGUINT', 4);
-define('XTHREADS_DATATYPE_FLOAT', 5);
+const XTHREADS_DATATYPE_TEXT = 0;
+const XTHREADS_DATATYPE_INT = 1;
+const XTHREADS_DATATYPE_UINT = 2;
+const XTHREADS_DATATYPE_BIGINT = 3;
+const XTHREADS_DATATYPE_BIGUINT = 4;
+const XTHREADS_DATATYPE_FLOAT = 5;
 
-define('XTHREADS_FILTER_NONE', 0);
-define('XTHREADS_FILTER_EXACT', 1);
-define('XTHREADS_FILTER_PREFIX', 2);
-define('XTHREADS_FILTER_ANYWHERE', 3);
-define('XTHREADS_FILTER_WILDCARD', 4);
+const XTHREADS_FILTER_NONE = 0;
+const XTHREADS_FILTER_EXACT = 1;
+const XTHREADS_FILTER_PREFIX = 2;
+const XTHREADS_FILTER_ANYWHERE = 3;
+const XTHREADS_FILTER_WILDCARD = 4;
 
 
 if(defined('IN_ADMINCP')) {
-	require MYBB_ROOT.'inc/xthreads/xt_admin.php';
+    require_once MYBB_ROOT.'inc/xthreads/xt_admin.php';
 }
 
 /**
  * Grab all information on thread fields
- * 
- * @param fid: forum ID to filter relevance from; 0 = no filtering (get all fields), -1 = only get fields applying to all forums
+ *
+ * @param int $fid : forum ID to filter relevance from; 0 = no filtering (get all fields), -1 = only get fields applying to all forums
  * @return array of thread fields
  */
-function &xthreads_gettfcache($fid=0) {
+function &xthreads_gettfcache(int $fid=0): array {
 	global $cache;
-	$tf = $cache->read('threadfields');
+	$tf = (array)$cache->read('threadfields');
 	if($fid && !empty($tf)) {
 		foreach($tf as $k => &$v) {
-			if($v['forums'] && ($fid == -1 || strpos(','.$v['forums'].',', ','.$fid.',') === false)) {
+			if($v['forums'] && ($fid == -1 || !str_contains(',' . $v['forums'] . ',', ',' . $fid . ','))) {
 				unset($tf[$k]);
 			}
 		}
@@ -135,7 +137,7 @@ function &xthreads_gettfcache($fid=0) {
 
 
 // the additional sorter options - need to load lang file
-function xthreads_forumdisplay_sortlang() {
+function xthreads_forumdisplay_sortlang(): void {
 	global $lang;
 	if(!isset($lang->sort_by_icon))
 		$lang->load('xthreads');
@@ -146,24 +148,24 @@ function xthreads_forumdisplay_sortlang() {
 	}
 }
 
-function xthreads_format_thread_date() {
+function xthreads_format_thread_date(): void {
 	// since this is so useful, always format start time/date for each thread
 	global $thread, $mybb;
 	$thread['threaddate'] = my_date($mybb->settings['dateformat'], $thread['dateline']);
 	$thread['threadtime'] = my_date($mybb->settings['timeformat'], $thread['dateline']);
 	
 	// I'm lazy, also do threadurl evaluation here
-	xthreads_set_threadforum_urlvars('thread', $thread['tid']);
+	xthreads_set_threadforum_urlvars('thread', (int)$thread['tid']);
 	
 	// issue on forumdisplay: it's possible for subforums to override the forum URL variable, so set it again here just in case
 	static $done=false;
 	if(!$done) {
 		$done = true;
-		xthreads_set_threadforum_urlvars('forum', $thread['fid']);
+		xthreads_set_threadforum_urlvars('forum', (int)$thread['fid']);
 	}
 }
 
-function xthreads_set_threadforum_urlvars($where, $id) {
+function xthreads_set_threadforum_urlvars(string $where, int $id): void {
 	$url = $where.'url';
 	$urlq = $url.'_q';
 	$func = 'get_'.$where.'_link';
@@ -173,7 +175,7 @@ function xthreads_set_threadforum_urlvars($where, $id) {
 }
 
 
-function xthreads_global() {
+function xthreads_global(): void {
 	global $current_page, $mybb, $templatelist, $templates;
 	
 	if($current_page == 'index.php' || $current_page == 'forumdisplay.php') {
@@ -193,7 +195,7 @@ function xthreads_global() {
 				$fid = (int)$mybb->input['fid'];
 				if($fid) break;
 			}
-			
+
 		case 'polls.php':
 			if(isset($mybb->input['action']) && isset($mybb->input['pid'])) switch($mybb->input['action']) {
 				case 'editpoll':
@@ -302,7 +304,7 @@ function xthreads_global() {
 								$post = get_post((int)$mybb->input['pid']);
 							if(!empty($post))
 								$thread = get_thread($post['tid']);
-							$do_preload = (!empty($thread) && $thread['firstpost'] == $post['pid']);
+							$do_preload = (!empty($thread) && !empty($post) && $thread['firstpost'] == $post['pid']);
 						}
 						if($do_preload) {
 							require_once MYBB_ROOT.'inc/xthreads/xt_sthreadhooks.php';
@@ -328,8 +330,10 @@ function xthreads_global() {
 			break;
 			case 'editpost.php':
 				$templatelist .= ',editpost_first';
+                break;
 			case 'newthread.php':
 				$templatelist .= ',post_threadfields_inputrow';
+                break;
 			case 'showthread.php':
 				$templatelist .= ',showthread_threadfields,showthread_threadfield_row';
 			break;
@@ -337,23 +341,23 @@ function xthreads_global() {
 		
 		// hide breadcrumb business
 		if($current_page != 'printthread.php') {
-			xthreads_breadcrumb_hack($fid);
+			xthreads_breadcrumb_hack((int)$fid);
 		} else {
 			// printthread needs some whacky attention
 			$GLOBALS['plugins']->add_hook('printthread_start', 'xthreads_breadcrumb_hack_printthread', 10, MYBB_ROOT.'inc/xthreads/xt_mischooks.php');
 		}
 		
-		xthreads_set_threadforum_urlvars('forum', $forum['fid']);
+		xthreads_set_threadforum_urlvars('forum', (int)$forum['fid']);
 	}
 	if(isset($set_thread_urlvar)) {
-		xthreads_set_threadforum_urlvars('thread', $set_thread_urlvar); // since it's convenient...
+		xthreads_set_threadforum_urlvars('thread', (int)$set_thread_urlvar); // since it's convenient...
 	}
 	// prevent error with <setvar> code
 	if(!isset($GLOBALS['tplvars']))
 		$GLOBALS['tplvars'] = array();
 }
 
-function xthreads_tpl_cache(&$t, &$obj) {
+function xthreads_tpl_cache(string &$t, \Templates &$obj): void {
 	if(xthreads_empty($t)) return;
 	global $db, $theme, $mybb;
 
@@ -377,14 +381,14 @@ function xthreads_tpl_cache(&$t, &$obj) {
 				$obj->cache[$tpl] =& $obj->cache[$prefix.$tpl];
 				break;
 			}
-		if(!isset($obj->cache[$tpl])) { // we'll add a possible optimisation thing here that MyBB doesn't do :P
+		if(!isset($obj->cache[$tpl])) { // we'll add a possible optimization thing here that MyBB doesn't do :P
 			$obj->cache[$tpl] = '';
 			$mybb->config['non_existant_templates'][$tpl] = true; // workaround for forumbits and postbit_first template prefixing
 		}
 	}
 	// note: above won't affect portal/search templates, so isset() check does check whether template actually exists
 }
-function xthreads_tpl_get(&$obj, &$t) {
+function xthreads_tpl_get(\Templates &$obj, string &$t): void {
 	if(!isset($obj->cache[$t])) {
 		// template not loaded, load it
 		if($GLOBALS['mybb']->debug_mode)
@@ -395,7 +399,7 @@ function xthreads_tpl_get(&$obj, &$t) {
 
 // get template prefixes for multiple forums
 // returns an array (forums) of arrays (prefixes), unless $firstonly is true, in which case, it's an array of strings (first prefix)
-function &xthreads_get_tplprefixes($firstonly=false, &$forums=null) {
+function &xthreads_get_tplprefixes(bool $firstonly=false, array &$forums=null): array {
 	$ret = array();
 	if(!function_exists('xthreads_evalcacheForums')) return $ret;
 	if($forums) $fids = array_keys($forums);
@@ -412,12 +416,12 @@ function &xthreads_get_tplprefixes($firstonly=false, &$forums=null) {
 }
 
 
-function xthreads_archive_breadcrumb() {
+function xthreads_archive_breadcrumb(): void {
 	if($GLOBALS['action'] == 'thread' || $GLOBALS['action'] == 'forum')
-		xthreads_breadcrumb_hack($GLOBALS[$GLOBALS['action']]['fid']);
+		xthreads_breadcrumb_hack((int)$GLOBALS[$GLOBALS['action']]['fid']);
 }
 
-function xthreads_breadcrumb_hack($fid) {
+function xthreads_breadcrumb_hack(int $fid): void {
 	global $pforumcache, $forum_cache;
 	if(!$pforumcache) {
 		if(!is_array($forum_cache))
@@ -454,7 +458,7 @@ function xthreads_breadcrumb_hack($fid) {
 	}
 }
 
-function xthreads_handle_uploads() {
+function xthreads_handle_uploads(): void {
 	global $mybb, $current_page;
 	if($mybb->request_method == 'post' && ($current_page == 'newthread.php' || ($current_page == 'editpost.php' && (!isset($mybb->input['action']) || $mybb->input['action'] != 'deletepost')))) {
 		require_once MYBB_ROOT.'inc/xthreads/xt_updatehooks.php';
@@ -462,7 +466,7 @@ function xthreads_handle_uploads() {
 	}
 }
 
-function xthreads_xmlhttp_blankpost_hack() {
+function xthreads_xmlhttp_blankpost_hack(): void {
 	global $mybb;
 	if(isset($mybb->input['action']) && isset($mybb->input['do']) && $mybb->input['action'] == 'edit_post' && $mybb->input['do'] == 'get_post') {
 		$post = get_post((int)$mybb->input['pid']);
@@ -484,7 +488,7 @@ function xthreads_xmlhttp_blankpost_hack() {
 }
 
 // function to set thumbnails into array to prevent PHP giving "cannot use string as array index" errors if a thumbnail doesn't exist (eg thread moved into gallery)
-function xthreads_sanitize_disp_set_blankthumbs(&$s, &$tfinfo) {
+function xthreads_sanitize_disp_set_blankthumbs(array &$s, array &$tfinfo): void {
 	if(!empty($tfinfo['fileimgthumbs'])) {
 		if(!isset($s['thumbs']))
 			$s['thumbs'] = array();
@@ -497,12 +501,13 @@ function xthreads_sanitize_disp_set_blankthumbs(&$s, &$tfinfo) {
 	}
 }
 // compatibility with XThreads < 1.60: we need to have the &$s variable here (rather than return $s) because we need to allow usage of {$threadfields[key]..} usage which was allowed
-function xthreads_sanitize_disp_set_xta_fields(&$s, $aid, &$tfinfo, $dispfmt='', $evalfunc='') {
+function xthreads_sanitize_disp_set_xta_fields(null|array|string &$s, int $aid, array &$tfinfo, string $dispfmt='', string $evalfunc=''): void {
 	global $xta_cache;
 	if(!is_numeric($aid) || !isset($xta_cache[$aid])) {
 		// fallback - prevent templating errors if this file happens to not exist
 		$s = array();
 		xthreads_sanitize_disp_set_blankthumbs($s, $tfinfo);
+        return;
 		//return $s;
 	}
 	$s = $xta_cache[$aid];
@@ -512,7 +517,7 @@ function xthreads_sanitize_disp_set_xta_fields(&$s, $aid, &$tfinfo, $dispfmt='',
 	$s['uploadmime'] = isset($s['uploadmime']) ? htmlspecialchars_uni($s['uploadmime']) : '';
 	if(empty($s['uploadtime'])) $s['uploadtime'] = TIME_NOW;
 	if(empty($s['updatetime'])) $s['updatetime'] = $s['uploadtime'];
-	$s['filesize_friendly'] = get_friendly_size(isset($s['filesize']) ? $s['filesize'] : 0);
+	$s['filesize_friendly'] = get_friendly_size($s['filesize'] ?? 0);
 	if(isset($s['md5hash'])) {
 		$s['md5hash'] = bin2hex($s['md5hash']);
 	}
@@ -551,7 +556,7 @@ function xthreads_sanitize_disp_set_xta_fields(&$s, $aid, &$tfinfo, $dispfmt='',
 	}
 	//return $s;
 }
-function xthreads_sanitize_disp(&$s, &$tfinfo, $mename=null, $noextra=false) {
+function xthreads_sanitize_disp(null|array|string &$s, array &$tfinfo, string $mename=null, bool $noextra=false): void {
 	$evalfunc = 'xthreads_evalcache_'.$tfinfo['field'];
 	if(!$noextra) {
 		// this "hack" stops this function being totally independent of the outside world :(
@@ -577,8 +582,8 @@ function xthreads_sanitize_disp(&$s, &$tfinfo, $mename=null, $noextra=false) {
 			return;
 		}
 		if(xthreads_empty($tfinfo['multival'])) {
-			xthreads_sanitize_disp_set_xta_fields($s, $s, $tfinfo, $dispfmt, $evalfunc);
-			$sx['value'] =& $s['value'];
+			xthreads_sanitize_disp_set_xta_fields($s, (int)$s, $tfinfo, $dispfmt, $evalfunc);
+			$sx['value'] = &$s['value'];
 		} else {
 			$aids = explode(',', $s);
 			$s = array(
@@ -593,7 +598,7 @@ function xthreads_sanitize_disp(&$s, &$tfinfo, $mename=null, $noextra=false) {
 			$comma = '';
 			foreach($aids as $aid) {
 				$xta =& $sx['items'][];
-				xthreads_sanitize_disp_set_xta_fields($xta, $aid, $tfinfo, 'dispitemformat', $evalfunc);
+				xthreads_sanitize_disp_set_xta_fields($xta, (int)$aid, $tfinfo, 'dispitemformat', $evalfunc);
 				if(empty($xta['aid'])) continue;
 				$sx['value'][] = $xta['value'];
 				$s['total_downloads'] += $xta['downloads'];
@@ -643,7 +648,7 @@ function xthreads_sanitize_disp(&$s, &$tfinfo, $mename=null, $noextra=false) {
 	}
 }
 
-function xthreads_sanitize_disp_field(&$v, &$tfinfo, $dispfmt, $mename) {
+function xthreads_sanitize_disp_field(string &$v, array &$tfinfo, string $dispfmt, string $mename): void {
 	$raw_v = $v;
 	if(isset($tfinfo['formatmap']) && isset($tfinfo['formatmap'][($vnl = str_replace("\r", '', $v))])) {
 		$v = eval_str($tfinfo['formatmap'][$vnl]); // not sanitized obviously
@@ -658,7 +663,7 @@ function xthreads_sanitize_disp_field(&$v, &$tfinfo, $dispfmt, $mename) {
 			'VALUE' => $v, 
 			'RAWVALUE' => $raw_v, 
 		);
-		if(!empty($tfinfo['regex_tokens'])) {
+		if(isset($type) && !empty($tfinfo['regex_tokens'])) {
 			if(preg_match('~'.str_replace('~', '\\~', $tfinfo['textmask']).'~si', $raw_v, $match)) {
 				$vars['RAWVALUE$'] =& $match;
 				switch($type & XTHREADS_SANITIZE_MASK) {
@@ -680,7 +685,7 @@ function xthreads_sanitize_disp_field(&$v, &$tfinfo, $dispfmt, $mename) {
 		$v = $evalfunc($dispfmt);
 }
 
-function xthreads_sanitize_disp_string($type, &$v, &$parser_opts = null, $mename='') {
+function xthreads_sanitize_disp_string(int|string $type, string &$v, array &$parser_opts = null, string $mename=''): string {
 	switch($type & XTHREADS_SANITIZE_MASK) {
 		case XTHREADS_SANITIZE_HTML:
 			return htmlspecialchars_uni($v);
@@ -690,7 +695,7 @@ function xthreads_sanitize_disp_string($type, &$v, &$parser_opts = null, $mename
 			global $parser;
 			if(!is_object($parser)) {
 				require_once MYBB_ROOT.'inc/class_parser.php';
-				$parser = new postParser;
+				$parser = new postParser();
 			}
 			if(empty($parser_opts)) {
 				$parser_opts = array(
@@ -709,13 +714,13 @@ function xthreads_sanitize_disp_string($type, &$v, &$parser_opts = null, $mename
 	return $v;
 }
 
-function eval_str(&$s, $vars=array()) {
-	// sanitisation done in cache build - don't need to do it here
+function eval_str(string &$s, array $vars=array()): string {
+	// sanitization done in cache build - don't need to do it here
 	return eval('return "'.$s.'";');
 }
 
 // gets array of all usergroups user is in, stored in keys
-function &xthreads_get_user_usergroups(&$user) {
+function &xthreads_get_user_usergroups(array &$user): array {
 	if($user['additionalgroups'])
 		$ug = array_flip(explode(',', $user['additionalgroups']));
 	else
@@ -726,7 +731,7 @@ function &xthreads_get_user_usergroups(&$user) {
 
 // determines whether current user is in a list of groups
 // empty gids list implies all usergroups (so will always return true if this is the case)
-function xthreads_user_in_groups(&$gids) {
+function xthreads_user_in_groups(array|string &$gids): bool {
 	if(empty($gids)) return true;
 	
 	static $ingroups = null;
@@ -739,7 +744,7 @@ function xthreads_user_in_groups(&$gids) {
 }
 
 // note, $tf isn't used for loading xtattachment cache - it's only there to simplify loop-logic
-function xthreads_get_xta_cache(&$tf, &$tids, $posthash='') {
+function xthreads_get_xta_cache(array &$tf, int|string &$tids, string $posthash=''): void {
 	//if(!$tids) return;
 	// our special query needed to get download info across
 	static $done_attach_dl_count = null;
@@ -762,7 +767,7 @@ function xthreads_get_xta_cache(&$tf, &$tids, $posthash='') {
 		$db->free_result($query);
 	}
 }
-function xthreads_get_xta_url(&$xta, $thumb='') {
+function xthreads_get_xta_url(array &$xta, string $thumb=''): string {
 	$delim = '/';
 	if(defined('XTHREADS_ATTACH_USE_QUERY') && XTHREADS_ATTACH_USE_QUERY == 2)
 		$delim = '|';
@@ -793,7 +798,7 @@ function xthreads_get_xta_url(&$xta, $thumb='') {
 	else $thumb = '';
 	
 	$attachhash = substr($xta['attachname'] ?? '', 0, 8);
-	if(XTHREADS_EXPIRE_ATTACH_LINK || XTHREADS_ATTACH_LINK_IPMASK) {
+	if(defined('XTHREADS_EXPIRE_ATTACH_LINK') && XTHREADS_EXPIRE_ATTACH_LINK || defined('XTHREADS_ATTACH_LINK_IPMASK') && XTHREADS_ATTACH_LINK_IPMASK) {
 		if(!function_exists('xthreads_attach_encode_hash')) {
 			require_once MYBB_ROOT.'inc/xthreads/xt_attachfuncs.php';
 		}
@@ -803,7 +808,7 @@ function xthreads_get_xta_url(&$xta, $thumb='') {
 }
 
 // only 'username' and 'fid' keys are used from the $thread array
-function xthreads_get_threadfields($tid, &$threadfields, $noextra=true, $thread=array()) {
+function xthreads_get_threadfields(int $tid, array &$threadfields, bool $noextra=true, array $thread=array()): void {
 	$tid = (int)$tid;
 	if(!$tid) return;
 	
@@ -827,30 +832,30 @@ function xthreads_get_threadfields($tid, &$threadfields, $noextra=true, $thread=
 }
 
 
-function xthreads_phptpl_eval_expr($s) {
+function xthreads_phptpl_eval_expr(string $s): string {
 	require_once MYBB_ROOT.'inc/xthreads/xt_phptpl_lib.php';
 	return eval('return ('.xthreads_phptpl_expr_parse($s).');');
 }
 
-function xthreads_phptpl_eval_text($s) {
+function xthreads_phptpl_eval_text(string $s): string {
 	require_once MYBB_ROOT.'inc/xthreads/xt_phptpl_lib.php';
 	xthreads_sanitize_eval($s);
 	return eval_str($s);
 }
 
 // it's annoying that '0' is considered "empty" by PHP...
-function xthreads_empty(&$v) {
+function xthreads_empty(mixed &$v): bool {
 	return empty($v) && $v !== '0';
 }
 // PHP doesn't seem to give an easy way to get a reference to the first element
-function &xthreads_get_array_first(&$a) {
+function &xthreads_get_array_first(array &$a): ?array {
 	foreach($a as &$e)
 		return $e;
 	$null = null;
 	return $null;
 }
 
-function xthreads_db_type($type=null) {
+function xthreads_db_type(string $type=null): string {
 	if(!isset($type)) $type = $GLOBALS['db']->type;
 	switch($type) {
 		case 'sqlite3': case 'sqlite2': case 'sqlite':
@@ -865,7 +870,7 @@ function xthreads_db_type($type=null) {
 
 
 if(!function_exists('control_object')) {
-	function control_object(&$obj, $code) {
+	function control_object(object &$obj, string $code): void {
 		static $cnt = 0;
 		$newname = '_objcont_'.(++$cnt);
 		$objserial = serialize($obj);
@@ -902,7 +907,7 @@ if(!function_exists('control_db')) {
 	if($GLOBALS['db'] instanceof AbstractPdoDbDriver) {
 		$GLOBALS['AbstractPdoDbDriver_lastResult_prop'] = new ReflectionProperty('AbstractPdoDbDriver', 'lastResult');
 		$GLOBALS['AbstractPdoDbDriver_lastResult_prop']->setAccessible(true);
-		function control_db($code) {
+		function control_db(string $code): void {
 			global $db;
 			$linkvars = array(
 				'read_link' => $db->read_link,
@@ -918,7 +923,7 @@ if(!function_exists('control_db')) {
 			$GLOBALS['AbstractPdoDbDriver_lastResult_prop']->setValue($db, $lastResult);
 		}
 	} elseif($GLOBALS['db'] instanceof DB_SQLite) {
-		function control_db($code) {
+		function control_db(string $code): void {
 			global $db;
 			$oldLink = $db->db;
 			unset($db->db);
@@ -926,7 +931,7 @@ if(!function_exists('control_db')) {
 			$db->db = $oldLink;
 		}
 	} else {
-		function control_db($code) {
+		function control_db(string $code): void {
 			control_object($GLOBALS['db'], $code);
 		}
 	}

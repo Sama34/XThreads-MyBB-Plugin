@@ -3,6 +3,8 @@
 if(!defined('IN_MYBB'))
 	die('This file cannot be accessed directly.');
 
+global $plugins;
+
 $plugins->add_hook('admin_tools_cache_start', 'xthreads_admin_cachehack');
 $plugins->add_hook('admin_tools_cache_rebuild', 'xthreads_admin_cachehack');
 //$plugins->add_hook('admin_tools_recount_rebuild_start', 'xthreads_admin_statshack');
@@ -41,20 +43,20 @@ if(isset($GLOBALS['run_module']) && $GLOBALS['run_module'] == 'config' && $GLOBA
 } else {
 	// this file might be included in plugin load
 	$plugins->add_hook('admin_config_plugins_begin', 'xthreads_load_install');
-	function xthreads_load_install() {
+	function xthreads_load_install(): void {
 		global $plugins;
 		require_once MYBB_ROOT.'inc/xthreads/xt_install.php';
 	}
 }
 
-function xthreads_is_installed() {
+function xthreads_is_installed(): bool {
 	static $is_installed = null;
 	if(!isset($is_installed))
 		$is_installed = $GLOBALS['db']->table_exists('threadfields');
 	return $is_installed;
 }
 
-function xthreads_db_fielddef($type, $size=null, $unsigned=null) {
+function xthreads_db_fielddef(string $type, ?int $size=null, ?bool $unsigned=null): string {
 	// defaults
 	if(!isset($unsigned)) {
 		$unsigned = ($type != 'tinyint');
@@ -105,7 +107,7 @@ function xthreads_db_fielddef($type, $size=null, $unsigned=null) {
 	}
 }
 
-function &xthreads_threadfields_props() {
+function &xthreads_threadfields_props(): array {
 	static $props = array(
 		'field' => array(
 			'db_size' => 50,
@@ -302,7 +304,7 @@ function &xthreads_threadfields_props() {
 	return $props;
 }
 
-function xthreads_default_threadfields_formhtml($type) {
+function xthreads_default_threadfields_formhtml(int $type): array {
 	$common_vars = array('KEY', 'NAME_PROP', 'VALUE', 'TABINDEX', 'TABINDEX_PROP', 'REQUIRED', 'REQUIRED_PROP', 'MULTIPLE', 'MULTIPLE_PROP', 'MULTIPLE_LIMIT');
 	switch($type) {
 		case XTHREADS_INPUT_TEXTAREA:
@@ -394,12 +396,12 @@ function xthreads_default_threadfields_formhtml($type) {
 }
 
 // flips an array for the purposes for sending to xthreads_sanitize_eval
-function xthreads_eval_flipfields($a) {
+function xthreads_eval_flipfields(array $a): array {
 	return array_combine($a, array_fill(0, count($a), null));
 }
 
-function xthreads_write_xtcachefile() {
-	$fp = @fopen(MYBB_ROOT.'cache/xthreads.php', 'w');
+function xthreads_write_xtcachefile(): bool {
+	$fp = fopen(MYBB_ROOT.'cache/xthreads.php', 'w');
 	if(!$fp) return false;
 
 	$defines = array();
@@ -618,7 +620,7 @@ ENDSTR
 	fclose($fp);
 	return true;
 }
-function xthreads_buildtfcache() {
+function xthreads_buildtfcache(): bool {
 	global $db, $cache;
 	
 	$cd = array();
@@ -682,7 +684,9 @@ function xthreads_buildtfcache() {
 '.$evalcache.$thumbcache);
 	
 	// rebuild the forums cache too - there's a dependency because this can affect the filtering etc allows
-	xthreads_buildcache_forums($fp);
+    if(is_resource($fp)) {
+        xthreads_buildcache_forums($fp);
+    }
 	
 	// build cache of default input HTML
 	foreach(array(
@@ -715,7 +719,7 @@ function xthreads_buildtfcache() {
 	fclose($fp);
 	return true;
 }
-function xthreads_buildtfcache_parseitem(&$tf) {
+function xthreads_buildtfcache_parseitem(array &$tf): void {
 	require_once MYBB_ROOT.'inc/xthreads/xt_phptpl_lib.php';
 	// remove unnecessary fields
 	if($tf['editable_gids']) $tf['editable'] = 0;
@@ -786,7 +790,7 @@ function xthreads_buildtfcache_parseitem(&$tf) {
 	
 	// preformat stuff to save time later
 	if(!empty($tf['formatmap']))
-		$tf['formatmap'] = @unserialize($tf['formatmap']);
+		$tf['formatmap'] = unserialize($tf['formatmap']);
 	else
 		$tf['formatmap'] = null;
 	
@@ -873,7 +877,7 @@ function xthreads_buildtfcache_parseitem(&$tf) {
 		if($tf['editable'] == XTHREADS_EDITABLE_NONE)
 			unset($tf['editable_values']);
 		else
-			$tf['editable_values'] = @unserialize($tf['editable_values']);
+			$tf['editable_values'] = unserialize($tf['editable_values']);
 	}
 	
 	// sanitise eval'd stuff
@@ -910,7 +914,7 @@ function xthreads_buildtfcache_parseitem(&$tf) {
 				xthreads_sanitize_eval($tf[$field], xthreads_eval_flipfields($sanitise_fields));
 		}
 	}
-	$formhtml = xthreads_default_threadfields_formhtml($tf['inputtype']);
+	$formhtml = xthreads_default_threadfields_formhtml((int)$tf['inputtype']);
 	if($tf['formhtml'] !== '') {
 		switch($tf['inputtype']) {
 			case XTHREADS_INPUT_SELECT:
@@ -928,7 +932,7 @@ function xthreads_buildtfcache_parseitem(&$tf) {
 		xthreads_sanitize_eval($tf['formhtml'], xthreads_eval_flipfields($formhtml[1]));
 	}
 }
-function xthreads_buildcache_parseitem_formhtml_pr($s) {
+function xthreads_buildcache_parseitem_formhtml_pr(array $s): string {
 	if(!empty($GLOBALS['__xt_formhtml_item'])) return ''; // multiple instance of replacement - BAD! (shouldn't happen because of limit specified in preg_replace)
 	xthreads_sanitize_eval($s[1], xthreads_eval_flipfields($GLOBALS['__xt_formhtml_sanitise_fields']));
 	$GLOBALS['__xt_formhtml_item'] = $s[1];
@@ -937,7 +941,8 @@ function xthreads_buildcache_parseitem_formhtml_pr($s) {
 
 // build xt_forums cache from forums cache (also reduce size of forums cache)
 // actually, it now just writes the evalcache stuff for forums
-function xthreads_buildcache_forums($fp) {
+/** @var resource $fp */
+function xthreads_buildcache_forums($fp): void {
 	global $cache;
 	$forums = $cache->read('forums');
 	$xtforums = array();
@@ -983,13 +988,13 @@ function xthreads_buildcache_forums($fp) {
 				$isarray = true;
 			}
 			unset($filter_array);
-			if(substr($kv[0], 0, 5) == '__xt_') {
+			if(str_starts_with($kv[0], '__xt_')) {
 				$kv[0] = substr($kv[0], 5);
 				if(in_array($kv[0], array('uid','lastposteruid','icon','prefix')))
 					$filter_array =& $xtforum['defaultfilter_xt'];
 			} else {
 				if(!isset($threadfield_cache))
-					$threadfield_cache = xthreads_gettfcache($fid);
+					$threadfield_cache = xthreads_gettfcache((int)$fid);
 				if(isset($threadfield_cache[$kv[0]]) && $threadfield_cache[$kv[0]]['allowfilter'])
 					$filter_array =& $xtforum['defaultfilter_tf'];
 			}
@@ -1049,14 +1054,14 @@ function xthreads_buildcache_forums($fp) {
 }
 
 if(function_exists('create_function')) {
-	function xthreads_check_evalstr($s) {
-		return (bool)@create_function('', 'return "'.$s.'";');
+	function xthreads_check_evalstr(string $s): bool {
+		return create_function('', 'return "'.$s.'";') !== false;
 	}
 } else {
-	function xthreads_check_evalstr($s) {
+	function xthreads_check_evalstr(string $s): bool {
 		$oldReporting = error_reporting(0);
 		try {
-			$tokens = @token_get_all("<?php\nreturn \"$s\";", TOKEN_PARSE);
+			$tokens = token_get_all("<?php\nreturn \"$s\";", TOKEN_PARSE);
 		} catch(Throwable $ex) {
 			error_reporting($oldReporting);
 			return false;
@@ -1067,16 +1072,16 @@ if(function_exists('create_function')) {
 }
 
 // checks whether the conditional supported text has any syntax errors
-function xthreads_check_condstr($s) {
+function xthreads_check_condstr(string $s): bool {
 	require_once MYBB_ROOT.'inc/xthreads/xt_phptpl_lib.php';
 	xthreads_sanitize_eval($s);
 	return xthreads_check_evalstr($s);
 }
 
-function xthreads_catch_errorhandler() {
+function xthreads_catch_errorhandler(): void {
 	// we'll now overwrite the error handler since MyBB's handler seems to interfere with the following
 	if(!function_exists('_xthreads_catch_php_error')) { //paranoia
-		function _xthreads_catch_php_error($errno, $errstr) {
+		function _xthreads_catch_php_error($errno, $errstr): void {
 			$GLOBALS['_previous_error'] = array($errno, $errstr);
 		}
 	}
@@ -1084,27 +1089,27 @@ function xthreads_catch_errorhandler() {
 	set_error_handler('_xthreads_catch_php_error');
 }
 
-function xthreads_admin_cachehack() {
+function xthreads_admin_cachehack(): void {
 	control_object($GLOBALS['cache'], '
 		function update_threadfields() {
 			xthreads_buildtfcache();
 		}
 	');
 }
-function xthreads_admin_menu(&$menu) {
+function xthreads_admin_menu(array &$menu): void {
 	global $lang;
 	$lang->load('xthreads');
 	$menu['32'] = array('id' => 'threadfields', 'title' => $lang->custom_threadfields, 'link' => xthreads_admin_url('config', 'threadfields'));
 }
-function xthreads_admin_action(&$actions) {
+function xthreads_admin_action(array &$actions): void {
 	$actions['threadfields'] = array('active' => 'threadfields', 'file' => 'threadfields.php');
 }
-function xthreads_admin_perms(&$perms) {
+function xthreads_admin_perms(array &$perms): void {
 	global $lang;
 	if(!isset($lang->can_manage_threadfields)) $lang->load('xthreads');
 	$perms['threadfields'] = $lang->can_manage_threadfields;
 }
-function &xthreads_admin_forumedit_get_description($lv) {
+function &xthreads_admin_forumedit_get_description(string $lv): string {
 	global $lang;
 	static $expander_id = 0;
 	$langdesc = $lv.'_desc';
@@ -1118,7 +1123,7 @@ function &xthreads_admin_forumedit_get_description($lv) {
 	}
 	return $desc;
 }
-function xthreads_admin_forumedit() {
+function xthreads_admin_forumedit(): void {
 	global $mybb;
 	if($mybb->request_method == 'post') {
 		global $errors, $lang;
@@ -1162,7 +1167,7 @@ function xthreads_admin_forumedit() {
 		');
 	}
 	
-	function xthreads_admin_forumedit_hook(&$args) {
+	function xthreads_admin_forumedit_hook(array &$args): void {
 		static $done = false;
 		if($done || $args['title'] != $GLOBALS['lang']->misc_options) return;
 		//$GLOBALS['plugins']->add_hook('admin_formcontainer_end', 'xthreads_admin_forumedit_hook2');
@@ -1195,7 +1200,7 @@ function xthreads_admin_forumedit() {
 			}
 		');
 	}
-	function xthreads_admin_forumedit_hook_sorter(&$args) {
+	function xthreads_admin_forumedit_hook_sorter(array &$args): void {
 		global $lang;
 		static $done = false;
 		if($done || $args['title'] != $lang->default_view_options) return;
@@ -1210,7 +1215,7 @@ function xthreads_admin_forumedit() {
 		$default_sort_by['numratings'] = $lang->xthreads_sort_ext_numratings;
 		$default_sort_by['attachmentcount'] = $lang->xthreads_sort_ext_attachmentcount;
 		
-		$threadfield_cache = xthreads_gettfcache(isset($forum_data['fid']) ? $forum_data['fid'] : -1);
+		$threadfield_cache = xthreads_gettfcache(isset($forum_data['fid']) ? (int)$forum_data['fid'] : -1);
 		if(!empty($threadfield_cache)) {
 			//$changed = false;
 			foreach($threadfield_cache as &$tf) {
@@ -1236,7 +1241,7 @@ function xthreads_admin_forumedit() {
 	}
 	$GLOBALS['plugins']->add_hook('admin_formcontainer_output_row', 'xthreads_admin_forumedit_hook');
 	$GLOBALS['plugins']->add_hook('admin_formcontainer_output_row', 'xthreads_admin_forumedit_hook_sorter');
-	function xthreads_admin_forumedit_run() {
+	function xthreads_admin_forumedit_run(): void {
 		global $lang, $form, $forum_data, $form_container;
 		
 		if(!isset($lang->xthreads_tplprefix)) $lang->load('xthreads');
@@ -1299,6 +1304,7 @@ function xthreads_admin_forumedit() {
 			$name = 'xthreads_'.$name;
 			$description = xthreads_admin_forumedit_get_description($name);
 			//$formfunc = 'generate_'.$type;
+            $html = '';
 			if(is_array($type)) {
 				foreach($type as &$t) {
 					$ln = $name.'_'.$t;
@@ -1428,7 +1434,7 @@ ofEditorSO.init();
 	}
 }
 
-function xthreads_admin_forumcommit_myplazaturbo_fix() {
+function xthreads_admin_forumcommit_myplazaturbo_fix(): void {
 	// pull out the fid into global scope
 	control_db('
 		function insert_query($table, $array) {
@@ -1443,7 +1449,7 @@ function xthreads_admin_forumcommit_myplazaturbo_fix() {
 	');
 }
 
-function xthreads_admin_forumcommit() {
+function xthreads_admin_forumcommit(): void {
 	// hook is after forum is added/edited, so we actually need to go back and update
 	global $fid, $db, $cache, $mybb;
 	if(!$fid) {
@@ -1525,7 +1531,7 @@ function xthreads_admin_forumcommit() {
 	xthreads_buildtfcache();
 }
 
-function xthreads_admin_forumdel() {
+function xthreads_admin_forumdel(): void {
 	control_db('
 		function delete_query($table, $where="", $limit="") {
 			static $done=false;
@@ -1537,7 +1543,7 @@ function xthreads_admin_forumdel() {
 		}
 	');
 }
-function xthreads_admin_forumdel_do($where) {
+function xthreads_admin_forumdel_do(string $where): void {
 	require_once MYBB_ROOT.'inc/xthreads/xt_modupdhooks.php';
 	global $db;
 	//$query = $db->simple_select('threads', 'tid', $where);
@@ -1568,7 +1574,7 @@ function xthreads_admin_forumdel_do($where) {
 }
 
 
-function xthreads_admin_userprune() {
+function xthreads_admin_userprune(): void {
 	global $mybb;
 	if(empty($mybb->cookies['inlinemod_useracp']) || !isset($mybb->input['inline_action']) || $mybb->input['inline_action'] != 'multiprune' || !isset($mybb->input['processed']) || $mybb->input['processed'] != 1) return;
 	
@@ -1584,7 +1590,7 @@ function xthreads_admin_userprune() {
 		}
 	');
 }
-function xthreads_admin_userprune_do() {
+function xthreads_admin_userprune_do(): void {
 	$tids = implode(',', $GLOBALS['prune_array']['to_delete']);
 	if(!$tids) return;
 	$qin = 'tid IN ('.$tids.')';
@@ -1593,15 +1599,15 @@ function xthreads_admin_userprune_do() {
 	xthreads_rm_attach_query($qin);
 }
 
-function xthreads_admin_modtool() {
+function xthreads_admin_modtool(): void {
 	$GLOBALS['plugins']->add_hook('admin_formcontainer_output_row', 'xthreads_admin_modtool_2');
-	function xthreads_admin_modtool_2(&$args) {
+	function xthreads_admin_modtool_2(array &$args): void {
 		if($args['title'] == $GLOBALS['lang']->new_subject.' <em>*</em>') {
 			$GLOBALS['plugins']->remove_hook('admin_formcontainer_output_row', 'xthreads_admin_modtool_2');
 			$GLOBALS['plugins']->add_hook('admin_formcontainer_end', 'xthreads_admin_modtool_3');
 		}
 	}
-	function xthreads_admin_modtool_3($rtn) {
+	function xthreads_admin_modtool_3(array $rtn): void {
 		$GLOBALS['plugins']->remove_hook('admin_formcontainer_end', 'xthreads_admin_modtool_3');
 		
 		global $lang;
@@ -1614,13 +1620,13 @@ function xthreads_admin_modtool() {
 		$GLOBALS['form_container']->output_row($lang->xthreads_modtool_edit_threadfields, $lang->xthreads_modtool_edit_threadfields_desc, $GLOBALS['form']->generate_text_area('edit_threadfields', $val, array('id' => 'edit_threadfields', 'style' => 'font-family: monospace')));
 		$GLOBALS['plugins']->add_hook('admin_formcontainer_output_row', 'xthreads_admin_modtool_4');
 	}
-	function xthreads_admin_modtool_4(&$args) {
+	function xthreads_admin_modtool_4(array &$args): void {
 		$GLOBALS['plugins']->remove_hook('admin_formcontainer_output_row', 'xthreads_admin_modtool_4');
 		xthreads_admin_common_ofe('edit_threadfields', true);
 	}
 }
 
-function xthreads_admin_modtool_commit() {
+function xthreads_admin_modtool_commit(): void {
 	global $mybb, $thread_options, $update_tool, $db;
 	if(isset($update_tool)) {
 		// updating
@@ -1644,7 +1650,7 @@ function xthreads_admin_modtool_commit() {
 
 
 // just because both the ModTools and Default Thread Filter fields use a very similar OFE...
-function xthreads_admin_common_ofe($fieldname, $fieldsOnly=false) {
+function xthreads_admin_common_ofe(string $fieldname, bool $fieldsOnly=false): void {
 	global $lang, $mybb, $db;
 	if(!isset($lang->xthreads_js_confirm_form_submit)) $lang->load('xthreads');
 	
@@ -1722,7 +1728,7 @@ ofEditor.init();
 
 
 
-function &xthreads_admin_getthumbfields() {
+function &xthreads_admin_getthumbfields(): array {
 	// generate list of fields which accept thumbs
 	$fields = $GLOBALS['cache']->read('threadfields');
 	$thumbfields = array();
@@ -1733,7 +1739,7 @@ function &xthreads_admin_getthumbfields() {
 	return $thumbfields;
 }
 
-function xthreads_admin_rebuildthumbs() {
+function xthreads_admin_rebuildthumbs(): void {
 	global $mybb, $db;
 	if($mybb->request_method == 'post') {
 		if(isset($mybb->input['do_rebuildxtathumbs'])) {
@@ -1755,7 +1761,7 @@ function xthreads_admin_rebuildthumbs() {
 			$where = 'field IN ("'.implode('","',array_keys($thumbfields)).'")'; //  AND tid!=0
 			$num_xta = $db->fetch_field($db->simple_select('xtattachments','count(*) as n',$where),'n');
 			
-			@set_time_limit(1800);
+			set_time_limit(1800);
 			require_once MYBB_ROOT.'inc/xthreads/xt_upload.php';
 			require_once MYBB_ROOT.'inc/xthreads/xt_updatehooks.php';
 			include_once MYBB_ROOT.'cache/xthreads_evalcache.php'; // for thumbnail code
@@ -1766,12 +1772,12 @@ function xthreads_admin_rebuildthumbs() {
 				// remove thumbs, then rebuild
 				$name = xthreads_get_attach_path($xta);
 				// unfortunately, we still need $xtadir
-				if($thumbs = @glob(substr($name, 0, -6).'*.thumb'))
+				if($thumbs = glob(substr($name, 0, -6).'*.thumb'))
 					foreach($thumbs as &$thumb) {
-						@unlink($xtadir.$xta['indir'].basename($thumb));
+						unlink($xtadir.$xta['indir'].basename($thumb));
 					}
 				
-				$thumb = xthreads_build_thumbnail($thumbfields[$xta['field']], $xta['aid'], $xta['field'], $name, $xtadir, $xta['indir']);
+				$thumb = xthreads_build_thumbnail($thumbfields[$xta['field']], (int)$xta['aid'], $xta['field'], $name, $xtadir, $xta['indir']);
 				// TODO: perhaps check for errors? but then, what to do?
 			}
 			$db->free_result($query);
@@ -1783,7 +1789,7 @@ function xthreads_admin_rebuildthumbs() {
 		$GLOBALS['plugins']->add_hook('admin_formcontainer_end', 'xthreads_admin_rebuildthumbs_show');
 	}
 }
-function xthreads_admin_rebuildthumbs_show() {
+function xthreads_admin_rebuildthumbs_show(): void {
 	global $form_container, $form, $lang;
 	
 	$thumbfields = xthreads_admin_getthumbfields();
@@ -1798,11 +1804,11 @@ function xthreads_admin_rebuildthumbs_show() {
 	$form_container->construct_row();
 }
 
-function xthreads_admin_url($cat, $module) {
+function xthreads_admin_url(string $cat, string $module): string {
 	return 'index.php?module='.$cat.($GLOBALS['mybb']->version_code >= 1500 ? '-':'/').$module;
 }
 
-function xthreads_admin_logs(&$a) {
+function xthreads_admin_logs(array &$a): void {
 	global $lang;
 	if(!isset($lang->admin_log_config_threadfields_inline)) $lang->load('xthreads');
 	if($a['lang_string'] == 'admin_log_config_threadfields_inline') {
@@ -1821,7 +1827,7 @@ function xthreads_admin_logs(&$a) {
 	}
 }
 
-function xthreads_admin_fileperms() {
+function xthreads_admin_fileperms(): void {
 	global $lang;
 	// MyBB only appends '.', but '../' is more accurate IMO
 	$path = $GLOBALS['mybb']->settings['uploadspath'].'/xthreads_ul';
@@ -1838,7 +1844,7 @@ function xthreads_admin_fileperms() {
 	$lang->language_files = $lang->xthreads_uploads_dir.'</strong></td><td class="alt_col">'.$path.'</td><td class="last">'.$message_xtupload.'</td></tr><tr><td class="first"><strong>'.$lang->language_files;
 }
 
-function xthreads_vercheck() {
+function xthreads_vercheck(): void {
 	global $admin_session, $lang, $mybb;
 	
 	$upgrade_link = 'index.php?xthreads_upgrade=1&amp;my_post_key='.$mybb->post_code;
@@ -1856,7 +1862,7 @@ function xthreads_vercheck() {
 	
 	
 	if(!defined('XTHREADS_INSTALLED_VERSION')) { // 1.32 or older
-		$info = @include(MYBB_ROOT.'cache/xthreads.php');
+		$info = include(MYBB_ROOT.'cache/xthreads.php');
 		if(is_array($info))
 			define('XTHREADS_INSTALLED_VERSION', $info['version']);
 		else {
@@ -1907,16 +1913,16 @@ function xthreads_vercheck() {
 	}
 }
 
-function xthreads_format_version_number($v) {
+function xthreads_format_version_number(float $v): string {
 	$ret = number_format($v, 3);
-	if(substr($ret, -1) === '0')
+	if(str_ends_with($ret, '0'))
 		return substr($ret, 0, -1);
 	else
 		return $ret;
 }
 
 // The following probably belongs in xt_install.php, but since I can see other plugins potentially wanting the _info() function available in their own pages, we'll stick it here
-function xthreads_info() {
+function xthreads_info(): array {
 	global $lang, $mybb, $plugins;
 	$lang->load('xthreads');
 	
@@ -1927,7 +1933,7 @@ function xthreads_info() {
 		'author'        => 'ZiNgA BuRgA',
 		'authorsite'    => 'http://mybbhacks.zingaburga.com/',
 		'version'       => xthreads_format_version_number(XTHREADS_VERSION),
-		'compatibility' => '14*,15*,16*,17*,18*',
+		'compatibility' => '14*,15*,16*,17*,18*,19*',
 		'guid'          => ''
 	);
 	if(is_object($plugins)) {
@@ -1969,7 +1975,7 @@ function xthreads_info() {
 		'guid'          => $info['guid']
 	);
 }
-function xthreads_info_no_more_fun() {
+function xthreads_info_no_more_fun(): void {
 	global $lang;
 	$lang->install_and_activate = $lang->__install_and_activate;
 	$lang->activate = $lang->__activate;
@@ -1977,30 +1983,30 @@ function xthreads_info_no_more_fun() {
 	$lang->uninstall = $lang->__uninstall;
 }
 
-function xthreads_install_img_install() {
+function xthreads_install_img_install(): string {
 	return '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';
 }
-function xthreads_install_img_uninstall() {
+function xthreads_install_img_uninstall(): string {
 	return 'iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAC9UlEQVR4Xr3Wb2hVdRzH8c/3d87v3J2z3bN7d9du97L2J5nNmQ/miKZjiSU5SCmm7s4H94YPSnoiwd2wgmYrS+kPFkOKsCat0iH4N6wH9uDKzNG00ZAxzf4wLwxRs8mNKL1+hOBAG+PuupEv+D5+P/rAFyT/17t3AU+t61ZGHOcBzJESQXM4/MgSn69hSiBaWBhJvfv2SQ6dIg9+ycOJ2EBU6zrkqQQIfNC0fPfka108sK71yoNA65TAV3t7T5AkT35D7t9D9n9Idmzi5lJ3B2axNRrZzs4kb7/RzfbFdX0ANABMCSytrlo91PXKBI9+Tu59h9lkgny+hXymjv2lehCAgWmWC1b92lB/nZuf4/al9acBROGZHvA0ld23aaytJcMta5ltqWFmSYB8uJjfBvW4ACEvsMOUfVy4gP80PspG234dnlkCHite4uz8vTZE1viZjvjIsMV+2/ghCiw7otUIi2yedf0sU6oNnnwDHgso3+WYA5mg5oUik5dsgxNa8YYS9imVKQAa4JlLwNOsJP6bpXjOEP4E8DuApSIr4ZlXQICXlHw0ImAa4GUBx03hy4Y6MO+AI+IeN9TFGwJeA7hbZPRVQw3Qb5JBzTVabZ1zwFUSOKUkfRXgJYApUxEidQDQXWB8zWqH16schkQa7zqgRQpSSsavABwVMG0pVinZiP94K6CP8fEQ+yrsM3cXEMEXIkN/APzeEN5yDCa0+gQz2FduD7I5xKcdI5l3IAm8f1PAQUNI12SvY44B0JhZ4cWaosk/F7kEUDxrIAos/kXAC1o44Zo8X6IZAFYhhwqgibXFfLHY6pk18N794c9YHeWoA2bDFtsLjF3IQ4ff2pmt9FMBJTkDJ55aPczYGl5eEOTfFRYXmbIBefq5zMk+a5tdOQOpji0/sudN3ow9Rq6oZLVgPfLUqo3Ep7YezhnY9uQTe3j+NHmohyNrl/0FIII8mYBRo2QFAF+uHVgfx2Opc50v8CGfjmPOcg9N/r35uzdfxR2oy6klFaNqGwAAAABJRU5ErkJggg==';
 }
-function xthreads_install_img_activate() {
+function xthreads_install_img_activate(): string {
 	return 'iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAADq0lEQVR4Xp3TS2xUZRjG8f83M+fMnLkxZTodZ8YOIm25F2nACCEk4CWkIUoCxnRlYtwaExIxkRgSNsa4cYUbY4MLjSxAIiUqbVORWuQSC4rQ0pYyFMOll+mZy5mZM+f7XLAxBFNOn+Tdvr/kffMIpRSP56suAUClDC2bd70XnJ14ozR9877H50cphBcs5eDYVUc4ypD1op21sI51nVbdPBYfT4oAIaCch+dXrnq35c1d7eTOg08HFKg6ODVwHKhF6Pvwhxv3560cwFMBQoAEYn6SGe+FdpDQGAKPDUKCdKDug4hG7adhJu18VznBsCvAKkFbG68b65MwUQRpgacOOCDr4NVhcpwrx0YvFg2GQxo8NWBXoVqBzMbwXrwpmJsBnwThADZ4l4A+QuHcCMNT1Q+MJtCVC6CiIKBDvLZ8E/MGlOvgBXDAo4F8AHPjXBgyevLR8i8Jxf/GwxMidPDZpDU7G6echyIwX4eChLIO0+c5942i//fZU8uaQgmBMJRyAcgCaBadkWwjCBOkDVYdbANuXYacSSAVkXtfaf4iXUldrCpl1d0A4aB33fodnW/rgQbM8RJm0YaAAdY9mLkJJdi0Jedpzkr+nBjb79FB01wAseYVz6jG+O3eL7/7/LPDp6/cM33QaIMzBBkeTSXO2b7aoGzmuE+CwsWTZ+6M9t79e7TX0WD1quSJtm2JDcyegoQNPiAFt07qTJr3Po5ngSoIN0/WvBBeCqpIcN1La/eQvgH6A0gkIdVIbTbJiaPmUCat/tDLZJQCpAsAL9Q1COZ5a9kLZbBzEOoAYw00rGV8agWpDSu3LPfExizBQwCEixPVJFQLsG17+/vh1LMUbttEUq1AFGzF6n1BmsxBThzP73MMahqg3JzIAwQ9UA3OfXvkQH//xLU4pNsgvBLSu5n9eoTvuy+9U4szoCtAAW6arAsQARi8fufT5/xkNmzN7qQShujLcLWHvqM/Hi5l6I44/93rApAAEjQJLR1Nq0mHwL8EzKucPXRwYCrKoagGUgGLARQAICoQSTZsJmiCfZe/Dhy5e6nCjlAclARYJCAA5QFfiY5QtLAEpri+/1cGRqe3GhnQJCgWD4AA6QevJV5dmrYZOzjMmcGHe/SN5Py1R7hwDTzegyosa43tnP+tgTM9ox/pL3IyUAElFly+cNFsCY4Jzdntr128Jn+Wa/gkUF3gLG6AegVisXDrtDn/z4Qz1hkMgFpwu5se+EAgYpOly7u1AI6qsej8C+nDfgnmbZ2GAAAAAElFTkSuQmCC';
 }
-function xthreads_install_img_deactivate() {
+function xthreads_install_img_deactivate(): string {
 	return 'iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAFWklEQVR4XrWSS2xcdxWHv/99zXjGnplre+xx/KonTWNSC9LgYBSCVESoRNUHCoSqbFqEKl4SS8QCiBJA7NlVLCIkgkTVIiSgCyjQli5aqJvQEkRVYvKwm4lnPJ65d2bu838PyKoUpYOUBeKTzuJszqefzk+JCACfePAMAKGyONBr0b5vjnWrRrF3k549IPC2wKhilQTdS+m++DKWfwXl1pBwgNg2KFA6m5PMOJZeefMZAIP/EWUYSBTAoItpWyjUEpl8EOCOAgWIUogIOuqTxTE6TUFxC9NCQo+stYNIASG+quD5OwuUQgvkB32s3oDizL0nC/tmT1bcSk1HIcQRQE0pPmtY1nFJRkmapUkxZc3I2T3ew+J9yHtWM4wInJiyVTjO/v3f9Su1TxleBxXs7hZKxnGpVlqDy1e/qcL4YXHnLuDsvGIkFwemnnlczOgV4M3bBIZhgVJYysLwemThxF3W/SvPvjtR+rBhgtPpEsUeQSNyrXzpUvn+k69ZhdGvdf/yu4Rq5fuqug/Vj79FGryjLePHQwkMZYAI+Z1t/rpcP+I99sj61KKLkfQhCskMC+waIMSbDbQ9sqaW7l0fu3H1ydhvFtN295OZ8BvTtu9WZnkBuHSb4K0L51Fak68sOPKDp/9kzeWx0y6YggBiKISULG9iuC4qyYjeuYBVnfmO6U4fif724hvKdH6p6h96Tf/rHww9WeqH0AsH6T3++XPuXROFRTsilyRIpJFMkYYpI3aO+qFDuJMugqawcgxjYXl/fml5p7x64idOpYbKFZatylh9SLB45NPMfvzUlLt2/Atj2S6qVCbyA5JWB9EKlWZMLx0kN1tH2xaSRtgzi1jlKqLUaWdipqBGy2pk5egzpUe/+o0hQXMspb1QegI1YLfd5t3rDYIoQ0fJ3phi0mx1+OfFN/CjiEQpsiRCmRaMlIzg5vVTykSsYnVu8Ooffj0ksLtdTK0/IElMzs6TUznCXZ+g00OliqTdxWh3KGaCMh3i/gCJIpSTgyTCqq983Vl79OndjZfOhd23XxhqUTwyms/EWLRNi16jgd/XhDdSxouTmDt5VOKiW30GMsBv3EBHMWZ5HO11Ucog0+poGu8ePRgsfrlWW2VI4G20nNyYW7Q1hJ4m7m6hpgfsTE+R+K8zkhbodzqYrSmIIkoz80icEgcBOo6gvUmim9S3H2iu9vcNt8jf2DiVG/QO0+6Rjx0m7EWS+lv0Vl5gcPhVmkvnKDh9pmaWmZhfQjCwo5B6bYaJqX1Y47MUiwf41fwvXj59z/eGE+RnLaNiGTnv+jYBGmt0mrHXP8bY+ttk+Spp5z5y0SrxqEfa6yG+T8UxcauTKNdl7/F+4/cjo0s7yjwwnGCw2f7pYHt7vRD3iTo+OmpTyt+N65yk3H+I6dIJ7EpG3OkQeT0qTo7xSoXYUIRZio48spvx+ZHLRZzLueEE2cWXgqvdrR+WPnrs2cwuU5iq4ro2qU6QUTAkIR8VSNMd+o0toryDKu3fq3CnsYlEfuBUD5/XvgNWNixAWpgbveeKiyunm/O5M+agT39rh0wEUGSJRmXCiNb4XoPmtZsEVy5hZCleElMbn/zcxIqKU+2DqGEBgBhC/+9/PBteK9i+8O2s30cyvdf7TKdkYYBKY6zQJ/R28YwOkiQYra3HGs1rz98IeqAMAPjRWQAQkb15P2Zp/LnKRx6QqQeflOlHnpLaZ74i0w9/6T/7EzL90BdlbPWE2PP3hObY+M+BUW5x212L/47SXvupzp9/+zPDzq0p264rO1dBMlu0jgFPgv5mlul1YB0QhhlOcGewAJNb3PGuEhH+n/wbrNqoOPOTlEUAAAAASUVORK5CYII=';
 }
-function xthreads_install_img_icon() {
+function xthreads_install_img_icon(): string {
 	return 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAKpElEQVR4Xq2VeYxd1X3HP+cub5t5b95sns0zHma84hCDg2FqoDGEADEx4LClBYoIKqmSIiWkKKhQFamkQpikSWmAkKihSksXaENInERgURMHxjZgG3u849k949neutzt3HOKbp9AkZI/UvUrHelJT7qfez+/n75HaK0ZvO0hQKCRCBRxYREzNJ7wsRubGX3xGaqFOb54yx+n/uG7zz1uNTacv/OFFx7fv2/vLtsy+MYPn8X1PIbWb+SVp37Igfffw1YusyLNE4eKVHyf+ZKkq6OT+7YMIMoVdp5a4r5tn8Dgd0bjBR6FcpGqrwE67rvv/j0Th0fuf/RP7vrU9NjEjuFj7/D8L34SwQGmz01jxxOfXDmw5rGBVeseS1j2RRUpV3d1tN372aE139++efWeTDb7tfbeLpRpo8IQi3qEEGigWK6g3YDGmNWZziY2dXV2bd788LeG1nW2Xroi05Z86IatzM6f5p4HHrW3b/8CO372GkyMA/D9HT/4x+z5q+/Jzi5CJkVn59LDsa55RmLN9LdlsQQ4nm/sOXzmm28cmeJrN16EBWBhobSB51ayA91dD60dGNyyrL39omXLOmJtre1UYgk+3pRi5KV/Ilxa4t5r7ySnxeQ3fnWoo3fD5VfEs+nNj22/4zPXrVu/9rkHvs4f3fWnpJUgEU+xbcMAwbEZdh6cIeVWyFWDwsGJ/LWXrO26LJEw3rQAcuRwS0XOH1j/rS/dcfc9RjyOKyXVmsdC1eXs9AwdbRmW1TyEUhQrRZIfG7r0hqHs+MquzkSzcSs322kevPI8ej+xmT1miksXS7RkGxEYXN0cZ9eROWQyRX9H09YrNgxu7etoZHbBP20BxERIwa0wsKL/s8pOcGZiCssUGMLAME1C6SE9H7Sgqh1cqejuW9WyvqebkcN7uSnIsPul7/BWbYHtm67j8f3vcHdjjHv/cAtIj0xDlrsuvoiReJyMCvECyUyuiu8ZRy0AN1A0NXRs7Ovoac8V81iGQGuNQmGaMRQa3/VZFk8j8XCX8owcf59XDx1A5RfZl+4gs+lCNl/zCt7KNXzGq3J6ZoI9hw4x1LcaW9kQOFTVWUxS+CoF2sDTwXELoFIN0jdeftW/n3feCmYW81imiW3HEAJ812Xh7DSvTU4hHYnft4GxP7icbFKxqaWF/g3rMLKNpFqa2ZBsoLI0h+ebnGtq45eThzly8h0G29tpW9nC1iYLx5lhLBcydq6XsGtmKuqBnm1f2fj5z930bvfy5TiOS61W5dTJE4SeQypmkkrEaUrF6OrqpmfdWhLpNE2hR9q0yFcdirUafijB8jCsCkm7SEuySJw8TrVAEslA4yBty7dTcf6b8dIJTpy4mKmGM7dYAIYhZMVxkDKkVCxy+th7rOxuZbB/Fe2trXR2dpDOpHGVikZRKpUo+JI8YJoSK+ZgWwUS8TxpK0fGLJLRPo2OgambMJw4c5M+lfIYrt/G2xWbTIdJX/GCnAWgQSuloi44enSE85e388AXb2WhEFKsVKg6LuWai9JEuxHqEAwfRYXebJb2TBOLzjGSapa0DohXTOxSC8LN4M/kmZ3JUb1wIwONSQ78/ACV1gsg6CbfFZu2AASA1vhBQOC79C3vYT4vObewiECg0dHLEcElwnRIWCUS8SKCGdxSSAsFzKLCWkoTTgToZJr2669jofYus9UxLr7sEo7s2sX7OZd0/2rKo/ncYy/2TljUa1CjcZwaBppkKonjehEUBFoTHaVDLNMlESuQjH9wzBqmV0IWqhhLFmK+maAIviMQzeDsPcWUCRffeTMn395PoTDDmi03su9cDtVQnV+9MON/aCBUmmqlgmkI0o2N+H6AVoCI4NH/Wkss4ZAwasQ9D6MqEXkLM5eFfBzfE0hDE6aXEYsNcmJ0kk23r2dpYozXf/lzMh+/BiEraF0ljIULN/z5UYy6gQhSqVSJ2SapVApfhiitCZVCKdCRBgm+i84HhNMKOS4Ip1L4Mymszh4aN2+gllpJfOAaXp4e4zs//SZ7d+/m1RdfwO/eyJjVx+hsnlAJpM/i3LlG6gYiAJVKGdu0iCcS+IEkjKCgibYUIwyRRQ9ZDrB9G+WlECpBmEmxEDQRzJmo3o8xvDDGf776t5jVBe7afjt3/9WTtK66ArOwiBIGvtIozKVQmlj1FUCGIVWnRsa2MAwTqfzo66MIAyUDjKpDV7aNmJ2hOFnGMjO48UYcs4GCq6hqm5yZ49+e/wqdccnIyDirrtxGauh2SsUCgesiQx3VexAE857nYBEFU6sQz3GJtTRgmBahgjBUgECLEBVILA9E2sBINOHF0pTNBDXDJhd4lBIBRleWV576Ku3BAqPvjxLvWs2ND/+AYqmIUymhhYGM5glKkxeGjVXfgQjmeS6WlUUDvpRopdEi2gMIQkyRYGLUR2Mgk03kpaQsq1R0hWzvSna/8HfEpg+QLxbJe5o7//pHlF2Pcn4RYVgRQ2kRPVeqMA98tANK66gJTctCKo0vVf1CAhWGiMBABwYkUlSVScmvUVUegXLoXLmOd3f9F/m9L5EwBSfPjHHrEz9FNbSSnz6NMGPoUKGUgvq+mVosIAzqTRgFgYrm4wYKPwzROiohlNToUFDV4KgAN/TxtIfSHsv6VzJ67CCnfvxtWlNx3vz1MJ9+8Ls0r72UhbHjIMwPwaBRSoMA27ILAsFHPSAlYSgjVY4v8QINgki/ChWBBE+CH+kL0Non29lDLpfjref+kvaEwb7hYTbedj+rrr6DxcnTCCEii1qFGIaBjtiRUQLLqhiWxYdNKENJpNq0qQUhbn0EodLR7KSEQOmoDREh8YYmAhHntb//MhmZ49Dh4/RsupbNX3iU3LlJVOjX7w6iBEEQjVjYCXQyS2F2vBzUynUDiAgSxbCoeUFkAa1RGlSoo05QaHQ0JptU63J+8dTX4exhxubmMFtXsPWh5yjlF/ErBUJNNEaMGCKRRpkx3FqFWn6JuRO7fnbyle+Nu6VF6gYiLQCEwsDxJL4fotH1Eqr/Eka0rNnuQd588WmW9v0Y3/PIO5I7nngeJ1Dk52chkUbbSYJAUl6cJX/s4GR+/OhwfmxkT2Hi+Bt+aXGEej4sIt/3UTqC4HqSIDKiqQctQAUeLX1ree+NnRz9jyeJG5qps3Ns3/ETEoNDnD09QtlTFEYPLObGj+/7X+DRYWfx7EGgzG+JBWAlGoUMQzSgMQikT6hCtKZ+GSmUlDS093Lm6CHeevoviCOZzXsMfXkHfmOP89ozj+xfGj3y68LEseHK7Ogh4CwfJQFkAQk4QPgbBgrHh1X31bdAuYBhGkipIn1Kq2g3hB0n1tLL5OwCu5/8ErZXoKhiiFTT68d/tfPbM08/fArpn6kDDKAZ6AVUHejUDYS/1UDx9NvtfPo2hDAjuOMF+GYS7CSO41A4N03x8KGpqdf/uU3kxpNuvIlqrXywXJz/lJ6dpA5bQxSqddgC4AGa35l6K8Wau27+5CP/qq985F/0PT86oj//zB591YPfm7vgc/e/3LVhy1ftdNsa4JrlbRnd39+vG9PpsmmaFwI9wEagv/7VNr9vtNaASHVccv3Lq7f92f6+oa1/07BsxVVAA7+ZGPBsIpE4Zdv2TQB1qMH/OXUDv2cE/4/5H3Bk31vEsz+4AAAAAElFTkSuQmCC';
 }
 
 
 /**
  * Convert shorthand size notation to byte value.  Eg '2k' => 2048
- * 
- * @param s Size string
- * @return size in bytes
+ *
+ * @param string $s Size string
+ * @return int size in bytes
  */
-function xthreads_size_to_bytes($s) {
+function xthreads_size_to_bytes(string $s): int {
 	$s = strtolower(trim($s));
 	if(!$s) return 0;
 	$v = (float)$s;

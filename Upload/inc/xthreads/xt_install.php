@@ -16,7 +16,7 @@ if(isset($plugins) && is_object($plugins)) {
 if(!defined('XTHREADS_MODIFY_TEMPLATES'))
 	define('XTHREADS_MODIFY_TEMPLATES', true);
 
-function xthreads_install() {
+function xthreads_install(): void {
 	global $db, $cache, $plugins;
 	$plugins->run_hooks('xthreads_install_start');
 	$create_table_suffix = $db->build_create_table_collation();
@@ -40,6 +40,7 @@ function xthreads_install() {
 			$auto_increment = ' PRIMARY KEY';
 			break;
 		case 'pgsql':
+        default:
 			$auto_increment = '';
 	}
 	
@@ -174,7 +175,7 @@ function xthreads_install() {
 	// admin permissions - default to all allow
 	$query = $db->simple_select('adminoptions', 'uid,permissions');
 	while($adminopt = $db->fetch_array($query)) {
-		$perms = @unserialize($adminopt['permissions']);
+		$perms = unserialize($adminopt['permissions']);
 		if(empty($perms)) continue; // inherited or just messed up
 		$perms['config']['threadfields'] = 1;
 		$db->update_query('adminoptions', array('permissions' => $db->escape_string(serialize($perms))), 'uid='.$adminopt['uid']);
@@ -183,8 +184,11 @@ function xthreads_install() {
 	$plugins->run_hooks('xthreads_install_end');
 }
 
-function xthreads_insert_templates($new_templates, $set=-1) {
+function xthreads_insert_templates(array $new_templates, int $set=-1): void {
 	global $mybb, $db;
+
+    $tpl_ver = 1900;
+
 	if($mybb->version_code >= 1700) // MyBB 1.8 beta or final
 		$tpl_ver = 1800;
 	elseif($mybb->version_code >= 1500) // MyBB 1.6 beta or final
@@ -202,7 +206,7 @@ function xthreads_insert_templates($new_templates, $set=-1) {
 		));
 	}
 }
-function xthreads_new_templates() {
+function xthreads_new_templates(): array {
 	return array(
 		'editpost_first' => '<!-- this template allows you to have something different from the editpost template for when editing the first post of a thread; by default, will just display the editpost template -->'."\n".'{$editpost}',
 		'forumdisplay_group_sep' => '<!-- stick your thread group separator template here -->',
@@ -235,7 +239,7 @@ Put your stuff here
 	));
 }
 
-function xthreads_undo_template_edits() {
+function xthreads_undo_template_edits(): void {
 	require_once MYBB_ROOT.'inc/adminfunctions_templates.php';
 	find_replace_templatesets('editpost', '#\\{\\$extra_threadfields\\}#', '', 0);
 	find_replace_templatesets('newthread', '#\\{\\$extra_threadfields\\}#', '', 0);
@@ -253,7 +257,7 @@ define('XTHREADS_INSTALL_TPLADD_EXTRASORT', str_replace("\r", '',
 					<option value="lastposter" {$sortsel[\'lastposter\']}>{$lang->sort_by_lastposter}</option>
 					<option value="attachmentcount" {$sortsel[\'attachmentcount\']}>{$lang->sort_by_attachmentcount}</option>'
 ));
-function xthreads_activate() {
+function xthreads_activate(): void {
 	global $db, $cache, $lang, $plugins;
 	$plugins->run_hooks('xthreads_activate_start');
 	$db->insert_query('tasks', array(
@@ -294,7 +298,7 @@ function xthreads_activate() {
 	}
 	$plugins->run_hooks('xthreads_activate_end');
 }
-function xthreads_deactivate() {
+function xthreads_deactivate(): void {
 	global $db, $cache, $plugins;
 	$plugins->run_hooks('xthreads_deactivate_start');
 	$db->delete_query('tasks', 'file="xtaorphan_cleanup"');
@@ -305,7 +309,7 @@ function xthreads_deactivate() {
 	$plugins->run_hooks('xthreads_deactivate_end');
 }
 
-function xthreads_uninstall() {
+function xthreads_uninstall(): void {
 	global $db, $cache, $mybb, $plugins;
 	
 	if(!empty($mybb->input['no'])) {
@@ -324,7 +328,7 @@ function xthreads_uninstall() {
 	
 	$query = $db->simple_select('adminoptions', 'uid,permissions');
 	while($adminopt = $db->fetch_array($query)) {
-		$perms = @unserialize($adminopt['permissions']);
+		$perms = unserialize($adminopt['permissions']);
 		if(empty($perms)) continue; // inherited or just messed up
 		unset($perms['config']['threadfields']);
 		$db->update_query('adminoptions', array('permissions' => $db->escape_string(serialize($perms))), 'uid='.$adminopt['uid']);
@@ -407,9 +411,9 @@ function xthreads_uninstall() {
 	xthreads_delete_datacache('threadfields');
 	
 	if(file_exists(MYBB_ROOT.'cache/xthreads.php'))
-		@unlink(MYBB_ROOT.'cache/xthreads.php');
+		unlink(MYBB_ROOT.'cache/xthreads.php');
 	if(file_exists(MYBB_ROOT.'cache/xthreads_evalcache.php'))
-		@unlink(MYBB_ROOT.'cache/xthreads_evalcache.php');
+		unlink(MYBB_ROOT.'cache/xthreads_evalcache.php');
 	
 	$db->delete_query('templates', 'title IN ("'.implode('","', array_keys(xthreads_new_templates())).'") AND sid=-2');
 	
@@ -436,7 +440,7 @@ function xthreads_uninstall() {
 	$plugins->run_hooks('xthreads_uninstall_end');
 }
 
-function xthreads_delete_datacache($key) {
+function xthreads_delete_datacache(string $key): void {
 	global $cache, $db;
 	$cache->update($key, null);
 	if(is_object($cache->handler) && method_exists($cache->handler, 'delete')) {
@@ -446,24 +450,24 @@ function xthreads_delete_datacache($key) {
 }
 
 // rebuild threadfields cache on phptpl activation/deactivation
-function xthreads_plugins_phptpl_activate() { xthreads_plugins_phptpl_reparse(true); }
-function xthreads_plugins_phptpl_deactivate() { xthreads_plugins_phptpl_reparse(false); }
-function xthreads_plugins_phptpl_reparse($active) {
+function xthreads_plugins_phptpl_activate(): void { xthreads_plugins_phptpl_reparse(true); }
+function xthreads_plugins_phptpl_deactivate(): void { xthreads_plugins_phptpl_reparse(false); }
+function xthreads_plugins_phptpl_reparse(bool $active): void {
 	if($GLOBALS['codename'] != 'phptpl' || !function_exists('phptpl_evalphp')) return;
 	
 	define('XTHREADS_ALLOW_PHP_THREADFIELDS_ACTIVATION', $active); // define is maybe safer?
 	xthreads_buildtfcache();
 }
 
-function xthreads_plugins_quickthread_install() {
+function xthreads_plugins_quickthread_install(): void {
 	if($GLOBALS['codename'] != 'quickthread' || !$GLOBALS['install_uninstall']) return;
 	xthreads_plugins_quickthread_tplmod();
 }
-function xthreads_plugins_quickthread_tplmod() {
+function xthreads_plugins_quickthread_tplmod(): void {
 	if(!function_exists('quickthread_install')) return;
 	global $db;
 	$tpl = $db->fetch_array($db->simple_select('templates', 'tid,template', 'title="forumdisplay_quick_thread" AND sid=-1', array('limit' => 1)));
-	if($tpl && strpos($tpl['template'], '{$GLOBALS[\'extra_threadfields\']}') === false) {
+	if($tpl && !str_contains($tpl['template'], '{$GLOBALS[\'extra_threadfields\']}')) {
 		$newtpl = preg_replace('~(\<tbody.*?\<tr\>.*?)(\<tr\>)~is', '$1{\\$GLOBALS[\'extra_threadfields\']}
 			$2', $tpl['template'], 1);
 		if($newtpl != $tpl['template'])

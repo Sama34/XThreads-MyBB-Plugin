@@ -1,6 +1,6 @@
 <?php
 
-function task_xtaorphan_cleanup(&$task) {
+function task_xtaorphan_cleanup(array &$task): void {
 	global $db, $lang, $plugins, $mybb;
 	if(is_object($plugins))
 		$plugins->run_hooks('xthreads_task_xtacleanup', $task);
@@ -25,7 +25,7 @@ function task_xtaorphan_cleanup(&$task) {
 	}
 	while($xta = $db->fetch_array($query)) {
 		$file = xthreads_get_attach_path($xta);
-		$file_md5 = @md5_file($file, true);
+		$file_md5 = md5_file($file, true);
 		if(strlen($file_md5) == 32) {
 			// perhaps not PHP5
 			$file_md5 = pack('H*', $file_md5);

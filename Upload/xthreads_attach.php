@@ -14,13 +14,13 @@
  * the original idea was to perform permission checking, but I have not decided to implement this; file downloads probably still work with it turned on, however, there isn't any reason to do this
  * may be useful to enable if you need data from the core though
  */
-define('LOAD_SESSION', false);
+const LOAD_SESSION = true;
 // need session class, mybb class, db class
 // OR, just check cookie for session & load DB to verify session + check perms
 // if using error_no_permission, must load entire global core
 
 
-function fatal_error($header, $msg) {
+function fatal_error(string $header, string $msg): never {
 	header('HTTP/1.1 '.$header);
 	header('Content-Type: text/html; charset=iso-8859-1');
 	/*
@@ -42,7 +42,7 @@ if(LOAD_SESSION) {
 	define('THIS_SCRIPT', 'xthreads_attach.php');
 	define('NO_ONLINE', 1); // TODO: check
 	
-	require './global.php';
+	require_once './global.php';
 	
 	// TODO: disable calling send_page_headers()
 	
@@ -50,7 +50,7 @@ if(LOAD_SESSION) {
 }
 else {
 	
-	// do some basic initialisation
+	// do some basic initialization
 	error_reporting(E_ALL ^ E_NOTICE); // this script works fine with E_ALL, however, we'll be compatible with MyBB
 	// remove unnecessary stuff
 	unset($HTTP_SERVER_VARS, $HTTP_GET_VARS, $HTTP_POST_VARS, $HTTP_COOKIE_VARS, $HTTP_POST_FILES, $HTTP_ENV_VARS, $HTTP_SESSION_VARS);
@@ -61,8 +61,8 @@ else {
 		}
 	// script will work if magic quotes is on, unless filenames happen to have quotes or something
 	if(function_exists('set_magic_quotes_runtime'))
-		set_magic_quotes_runtime(0);
-	ini_set('magic_quotes_runtime', 0);
+		set_magic_quotes_runtime(false);
+	ini_set('magic_quotes_runtime', '0');
 	// will also work with register globals, so we won't bother with these
 	
 	if(function_exists('date_default_timezone_set') && !ini_get('date.timezone'))
@@ -76,8 +76,8 @@ else {
 
 
 // put everything in function to limit scope (and memory usage by relying on PHP to garbage collect all the unreferenced variables)
-function do_processing() {
-	
+function do_processing(): void {
+
 	if(isset($GLOBALS['mybb']) && is_object($GLOBALS['mybb'])) {
 		$basedir = $GLOBALS['mybb']->settings['uploadspath'].'/xthreads_ul/';
 		$bburl = $GLOBALS['mybb']->settings['bburl'];
@@ -85,8 +85,8 @@ function do_processing() {
 		if(file_exists(MYBB_ROOT.'inc/settings.php')) {
 			require MYBB_ROOT.'inc/settings.php';
 			// TODO: perhaps have a dedicated setting for this one
-			$basedir = $settings['uploadspath'].'/xthreads_ul/';
-			$bburl = $settings['bburl'];
+			$basedir = ($settings['uploadspath'] ?? '').'/xthreads_ul/';
+			$bburl = $settings['bburl'] ?? '';
 			unset($settings);
 		}
 		else // use default
@@ -140,9 +140,9 @@ function do_processing() {
 		$match[5] = rawurldecode($match[5]);
 	$match[5] = str_replace("\0", '', $match[5]);
 	$month_dir = 'ts_'.floor($match[2] / 1000000).'/';
-	if(XTHREADS_EXPIRE_ATTACH_LINK || XTHREADS_ATTACH_LINK_IPMASK) {
+	if(defined('XTHREADS_EXPIRE_ATTACH_LINK') &&XTHREADS_EXPIRE_ATTACH_LINK || defined('XTHREADS_ATTACH_LINK_IPMASK') &&XTHREADS_ATTACH_LINK_IPMASK) {
 		// decode special thing
-		require MYBB_ROOT.'inc/xthreads/xt_attachfuncs.php';
+        require_once MYBB_ROOT.'inc/xthreads/xt_attachfuncs.php';
 		$match[3] = xthreads_attach_decode_hash($match[3]);
 		// note that $match[3] isn't secret (eg sent as an ETag)
 	}
@@ -152,7 +152,7 @@ function do_processing() {
 	elseif(file_exists($basedir.$fn))
 		$fn_rel = $fn;
 	else
-		fatal_error('404 Not Found', 'Specified attachment not found.'.(XTHREADS_EXPIRE_ATTACH_LINK ? '  It\'s possible that the link has expired - try going back, refresh the page, and access the attachment again.':''));
+		fatal_error('404 Not Found', 'Specified attachment not found.'.(defined('XTHREADS_EXPIRE_ATTACH_LINK') && XTHREADS_EXPIRE_ATTACH_LINK ? '  It\'s possible that the link has expired - try going back, refresh the page, and access the attachment again.':''));
 	$fn = $basedir.$fn_rel;
 
 	// check to see if unmodified/cached
@@ -186,7 +186,7 @@ function do_processing() {
 		unset($evalcode);
 	}
 	
-	if(!XTHREADS_PROXY_REDIR_HEADER_PREFIX) {
+	if(!defined('XTHREADS_PROXY_REDIR_HEADER_PREFIX') || !XTHREADS_PROXY_REDIR_HEADER_PREFIX) {
 		$fp = fopen($fn, 'rb');
 		if(!$fp)
 			fatal_error('500 Internal Server Error', 'Failed to open file.');
@@ -222,14 +222,13 @@ function do_processing() {
 				header('HTTP/1.1 206 Partial Content');
 		}
 
-		if(XTHREADS_COUNT_DOWNLOADS == 1 && !$thumb) increment_downloads($match[1]);
+		if(defined('XTHREADS_COUNT_DOWNLOADS') && XTHREADS_COUNT_DOWNLOADS == 1 && !$thumb) increment_downloads((int)$match[1]);
 		header('Accept-Ranges: bytes');
-	} else {
-		if(XTHREADS_COUNT_DOWNLOADS && !$thumb) increment_downloads($match[1]);
-	}
+	} elseif(defined('XTHREADS_COUNT_DOWNLOADS') && XTHREADS_COUNT_DOWNLOADS && !$thumb) increment_downloads((int)$match[1]);
+
 	header('Allow: GET, HEAD');
 	header('Last-Modified: '.gmdate('D, d M Y H:i:s', $modtime).' GMT');
-	if(XTHREADS_CACHE_TIME) {
+	if(defined('XTHREADS_CACHE_TIME') && XTHREADS_CACHE_TIME) {
 		header('Expires: '.gmdate('D, d M Y H:i:s', time() + XTHREADS_CACHE_TIME).' GMT');
 		header('Cache-Control: max-age='.XTHREADS_CACHE_TIME);
 	} else {
@@ -295,7 +294,7 @@ function do_processing() {
 			'ogv' => 'video/ogg',
 			'wmv' => 'audio/x-ms-wmv',
 		);
-		if(XTHREADS_MIME_OVERRIDE) {
+		if(defined('XTHREADS_MIME_OVERRIDE') && XTHREADS_MIME_OVERRIDE) {
 			foreach(explode(',', strtolower(XTHREADS_MIME_OVERRIDE)) as $mime_entry) {
 				$mime_info = explode(' ', trim($mime_entry), 2);
 				if(isset($mime_info[1]) && $mime_info[1] !== '') {
@@ -339,7 +338,7 @@ function do_processing() {
 	if(!$thumb) { // don't send disposition for thumbnails
 		$disposition = 'attachment';
 		if(!isset($_REQUEST['download']) || !$_REQUEST['download'])
-			if(!isset($_SERVER['HTTP_USER_AGENT']) || strpos(strtolower($_SERVER['HTTP_USER_AGENT']), 'msie') === false) {
+			if(!isset($_SERVER['HTTP_USER_AGENT']) || !str_contains(strtolower($_SERVER['HTTP_USER_AGENT']), 'msie')) {
 				switch(strtolower($content_type)) {
 					case 'text/plain': case 'text/css': case 'text/javascript':
 					case 'application/pdf':
@@ -355,7 +354,7 @@ function do_processing() {
 		header('Content-Disposition: '.$disposition.'; filename="'.strtr($match[5], array('"'=>'\\"', "\r"=>'', "\n"=>'')).'"');
 	}
 
-	if(XTHREADS_PROXY_REDIR_HEADER_PREFIX) {
+	if(defined('XTHREADS_PROXY_REDIR_HEADER_PREFIX') && XTHREADS_PROXY_REDIR_HEADER_PREFIX) {
 		// we terminate here and let the webserver do the rest of the work
 		header(XTHREADS_PROXY_REDIR_HEADER_PREFIX.$fn_rel);
 		exit;
@@ -383,12 +382,12 @@ function do_processing() {
 		exit;
 	}
 	
-	if(XTHREADS_COUNT_DOWNLOADS == 2 && !$thumb)
+	if(defined('XTHREADS_COUNT_DOWNLOADS') && XTHREADS_COUNT_DOWNLOADS == 2 && !$thumb)
 		$GLOBALS['aid'] = $match[1]; // increment download below
 	
 } do_processing();
 
-// kill unneeded variables - save memory as this PHP thread may last a while on the server especially for larger downloads
+// kill unneeded variables - save memory as this PHP thread may last awhile on the server especially for larger downloads
 unset($_REQUEST, $_COOKIE, $_SERVER);
 /* $keepvars = array('keepvars'=>1, 'k'=>1, 'v'=>1, 'GLOBALS'=>1, 'fp'=>1, 'fsize'=>1, 'range_start'=>1, 'range_end'=>1, 'thumb'=>1, 'match'=>1);
 // note, thumb may be a reference to match
@@ -401,7 +400,9 @@ unset($keepvars, $k, $v); */
 if(LOAD_SESSION) unset($mybb, $db); // TODO: maybe also unload other vars
 
 if(!function_exists('stream_copy_to_stream')) {
-	function stream_copy_to_stream($source, $dest, $maxlength=-1, $offset=0) {
+    /** @var resource $source */
+    /** @var resource $dest */
+	function stream_copy_to_stream($source, $dest, int $maxlength=-1, int $offset=0): int {
 		if($offset)
 			fseek($source, $offset, SEEK_CUR);
 		$copied = 0;
@@ -416,19 +417,22 @@ if(!function_exists('stream_copy_to_stream')) {
 	}
 }
 
+global $plugins;
+
 if(is_object($plugins)) $plugins->run_hooks('xthreads_attachment_before_download');
 
 $fout = fopen('php://output', 'wb'); // this call shouldn't fail, right?
 
-if($range_start)
-	fseek($fp, $range_start);
+if(isset($fp) && !empty($range_start)) {
+    fseek($fp, $range_start);
+}
 
-if($range_end == $fsize-1) {
+if(isset($fp) && isset($range_end) && isset($fsize) && $range_end == $fsize-1) {
 	unset($range_start, $range_end, $fsize);
 	stream_copy_to_stream($fp, $fout);
 	//while(!feof($fp)) echo fread($fp, 16384);
 	if(isset($aid)) increment_downloads($aid);
-} else {
+} elseif(isset($fp) && isset($range_end) && isset($range_start)) {
 	$bytes = $range_end - $range_start + 1;
 	unset($aid, $range_start, $range_end, $fsize);
 	stream_copy_to_stream($fp, $fout, $bytes);
@@ -440,14 +444,17 @@ if($range_end == $fsize-1) {
 	} */
 }
 
-fclose($fp);
+if(isset($fp) && is_resource($fp)) {
+    fclose($fp);
+}
+
 fclose($fout);
 
 
-function increment_downloads($aid) {
+function increment_downloads(int $aid): void {
 	// if DB is loaded, use it
 	if(isset($GLOBALS['db']) && is_object($GLOBALS['db'])) {
-		$GLOBALS['db']->write_query('UPDATE '.$db->table_prefix.'xtattachments SET downloads=downloads+1 WHERE aid='.(int)$aid, 1);
+		$GLOBALS['db']->write_query('UPDATE '.$GLOBALS['db']->table_prefix.'xtattachments SET downloads=downloads+1 WHERE aid='.(int)$aid, 1);
 		return;
 	}
 	
@@ -458,24 +465,25 @@ function increment_downloads($aid) {
 	
 	// create dummy classes before loading DB
 	class dummy_mybb {
-		var $debug_mode = false;
+		public bool $debug_mode = false;
 	}
-	$GLOBALS['mybb'] = new dummy_mybb;
+	$GLOBALS['mybb'] = new dummy_mybb();
 	
 	// functions required by MyBB >= 1.7
 	if(!function_exists('get_execution_time')) {
+        /** @return void|float */
 		function get_execution_time() {
 			static $time_start;
 			if($time_start) {
 				$total = microtime(true) - $time_start;
 				$time_start = 0;
-				return max(0, $total);
+				return (float)max(0, $total);
 			}
 			$time_start = microtime(true);
 		}
 	}
 	if(!function_exists('format_time_duration')) {
-		function format_time_duration($time) {
+		function format_time_duration(int|string $time): string {
 			if(!is_numeric($time)) return '-';
 			// drop microseconds case - no-one really cares
 			if($time < 1)
@@ -495,7 +503,7 @@ function increment_downloads($aid) {
 	$dbclass = 'db_'.$config['database']['type'];
 	require_once MYBB_ROOT.'inc/'.$dbclass.'.php';
 	if(!class_exists($dbclass)) return;
-	$db = new $dbclass;
+	$db = new $dbclass();
 	if(!extension_loaded($db->engine)) {
 		if(!function_exists('dl')) return;
 		if(DIRECTORY_SEPARATOR == '\\')
