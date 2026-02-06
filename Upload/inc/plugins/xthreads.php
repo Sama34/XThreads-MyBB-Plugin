@@ -142,7 +142,7 @@ function xthreads_forumdisplay_sortlang() {
 	// prefix sort
 	if($GLOBALS['mybb']->version_code >= 1500) {
 		$tpl =& $GLOBALS['templates']->cache[$GLOBALS['mybb']->version_code >= 1827 ? 'forumdisplay_forumsort' : 'forumdisplay_threadlist'];
-		$tpl = str_replace('{$sort_by_prefix}', '<option value="prefix" {$sortsel[\'prefix\']}>{$lang->sort_by_prefix}</option>', $tpl);
+		$tpl = str_replace('{$sort_by_prefix}', '<option value="prefix" {$sortsel[\'prefix\']}>{$lang->sort_by_prefix}</option>', $tpl ?? '');
 	}
 }
 

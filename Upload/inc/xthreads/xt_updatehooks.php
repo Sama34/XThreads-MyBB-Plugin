@@ -47,7 +47,7 @@ function xthreads_filter_tfeditable(&$tf, $fid=0) {
 function xthreads_tfvalue_settable(&$tf, $val) {
 	if(empty($tf['editable_values'])) return true;
 	$cv = (string)xthreads_convert_str_to_datatype($val, $tf['datatype']);
-	$allow_groups = $tf['editable_values'][$cv];
+	$allow_groups = $tf['editable_values'][$cv] ?? null;
 	return (!isset($allow_groups)
 		|| (!xthreads_empty($allow_groups) && xthreads_user_in_groups($allow_groups)));
 }
@@ -677,8 +677,8 @@ function xthreads_input_generate(&$data, &$threadfields, $fid, $tid=0) {
 				
 		}
 		if(!isset($defvals) && ($tf['inputtype'] != XTHREADS_INPUT_FILE && $tf['inputtype'] != XTHREADS_INPUT_FILE_URL))
-			$defval = htmlspecialchars_uni($defval);
-		
+			$defval = !empty($defval) ? htmlspecialchars_uni($defval) : '';
+
 		if(!empty($tf['tabstop'])) {
 			$vars['TABINDEX'] = ++$xthreads_threadin_tabindex_shift +1;
 			$vars['TABINDEX_PROP'] = ' tabindex="__xt_'.$vars['TABINDEX'].'"';
