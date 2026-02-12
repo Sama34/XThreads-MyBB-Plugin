@@ -138,7 +138,9 @@ function xthreads_hardlink_file(string $src, string $dest): bool {
 		if($allow_exec) {
 			// try mklink (Windows Vista / Server 2008 and later only)
 			// assuming mklink refers to the correct executable is a little dangerous perhaps, but it should work
-			unlink($dest); // mklink won't overwrite
+            if(file_exists($dest)) {
+                unlink($dest); // mklink won't overwrite
+            }
 			exec('mklink /H '.escapeshellarg(str_replace('/', '\\', $src)).' '.escapeshellarg(str_replace('/', '\\', $dest)).' >NUL 2>NUL', $null, $ret);
 			if($ret==0 && file_exists($dest)) return true;
 		}

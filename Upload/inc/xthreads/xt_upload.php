@@ -61,7 +61,9 @@ function do_upload_xtattachment(array|string $attachment, array &$tf, int $updat
 		$attachment['name'] = strtr($attachment['name'], array('/' => '', "\x0" => ''));
 		
 		if($error = xthreads_validate_attachment($attachment, $tf)) {
-			unlink($attachment['tmp_name']);
+            if(file_exists($attachment['tmp_name'])) {
+                unlink($attachment['tmp_name']);
+            }
 			return array('error' => $error);
 		}
 		
@@ -117,7 +119,9 @@ function do_upload_xtattachment(array|string $attachment, array &$tf, int $updat
 	if(!empty($tf['fileimage'])) {
 		$img_dimensions = getimagesize($attachment['tmp_name']);
 		if(empty($img_dimensions) || !in_array($img_dimensions[2], array(IMAGETYPE_GIF,IMAGETYPE_JPEG,IMAGETYPE_PNG))) {
-			unlink($attachment['tmp_name']);
+            if(file_exists($attachment['tmp_name'])) {
+                unlink($attachment['tmp_name']);
+            }
 			return array('error' => $lang->error_attachtype);
 		}
 		if(preg_match('~^([0-9]+)x([0-9]+)(\\|([0-9]+)x([0-9]+))?$~', $tf['fileimage'], $match)) {
@@ -127,7 +131,9 @@ function do_upload_xtattachment(array|string $attachment, array &$tf, int $updat
 					$img_dimensions[0] > $match[4] || $img_dimensions[1] > $match[5]
 				)
 			)) {
-				unlink($attachment['tmp_name']);
+                if(file_exists($attachment['tmp_name'])) {
+                    unlink($attachment['tmp_name']);
+                }
 				return array('error' => $lang->sprintf($lang->xthreads_xtaerr_error_imgdims, $img_dimensions[0], $img_dimensions[1]));
 			}
 		}
@@ -283,7 +289,9 @@ function do_upload_xtattachment(array|string $attachment, array &$tf, int $updat
 		rename($path.$month_dir.$filename, $new_file);
 		if(!file_exists($new_file)) {
 			// oh dear, all our work for nothing...
-			unlink($path.$month_dir.$filename);
+            if(file_exists($path.$month_dir.$filename)) {
+                unlink($path.$month_dir.$filename);
+            }
 			$db->delete_query('xtattachments', 'aid='.$attacharray['aid']);
 			ignore_user_abort(false);
 			return array('error' => $lang->error_uploadfailed.$lang->error_uploadfailed_detail.$lang->error_uploadfailed_lost);
@@ -499,7 +507,9 @@ function xthreads_fetch_url(string $url, int $max_size=0, string $valid_ext='', 
 		'name_disposition' => false,
 		'size' => 0,
 	);
-	unlink($ret['tmp_name']);
+    if(file_exists($ret['tmp_name'])) {
+        unlink($ret['tmp_name']);
+    }
 	if(str_ends_with($purl['path'], '/') || xthreads_empty($ret['name'])) $ret['name'] = 'index.html';
 	
 	require_once MYBB_ROOT.'inc/xthreads/xt_urlfetcher.php';
@@ -568,11 +578,15 @@ function xthreads_fetch_url(string $url, int $max_size=0, string $valid_ext='', 
 	
 	fclose($fp);
 	if(!empty($ret['error']))
-		unlink($ret['tmp_name']);
+        if(file_exists($ret['tmp_name'])) {
+            unlink($ret['tmp_name']);
+        }
 	else {
 		$ret['size'] = filesize($ret['tmp_name']);
 		if($ret['size'] < 1 || empty($ret['name'])) // weird...
-			unlink($ret['tmp_name']);
+            if(file_exists($ret['tmp_name'])) {
+                unlink($ret['tmp_name']);
+            }
 	}
 	
 	set_time_limit(30);
@@ -701,7 +715,9 @@ function xthreads_fetch_url_tmp_shutdown(): void {
 	if(!connection_aborted()) return;
 	global $xtfurl_tmpfiles;
 	foreach($xtfurl_tmpfiles as $name => $foo) {
-		unlink($name); // should always succeed (hopefully)...
+        if(file_exists($name)) {
+            unlink($name); // should always succeed (hopefully)...
+        }
 	}
 }
 

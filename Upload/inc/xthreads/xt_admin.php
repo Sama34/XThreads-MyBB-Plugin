@@ -1774,7 +1774,9 @@ function xthreads_admin_rebuildthumbs(): void {
 				// unfortunately, we still need $xtadir
 				if($thumbs = glob(substr($name, 0, -6).'*.thumb'))
 					foreach($thumbs as &$thumb) {
-						unlink($xtadir.$xta['indir'].basename($thumb));
+                        if(file_exists($xtadir.$xta['indir'].basename($thumb))) {
+                            unlink($xtadir.$xta['indir'].basename($thumb));
+                        }
 					}
 				
 				$thumb = xthreads_build_thumbnail($thumbfields[$xta['field']], (int)$xta['aid'], $xta['field'], $name, $xtadir, $xta['indir']);

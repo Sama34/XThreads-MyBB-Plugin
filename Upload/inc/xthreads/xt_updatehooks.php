@@ -1204,12 +1204,16 @@ function xthreads_rm_attach_fs(array &$xta): bool {
 	// remove thumbnails
 	if($thumbs = glob(substr($name, 0, -6).'*.thumb')) {
 		foreach($thumbs as &$thumb) {
-			$success = $success && unlink($path.basename($thumb));
+            if(file_exists($path.basename($thumb))) {
+                $success = $success && unlink($path.basename($thumb));
+            }
 		}
 	}// else // glob _should_ succeed...
 	//	$success = false;
 	if(!$success) return false;
-	$success = unlink($name);
+    if(file_exists($name)) {
+        $success = unlink($name);
+    }
 	// remove month dir if possible
 	if($xta['indir']) {
 		$rmdir = true;
@@ -1224,7 +1228,9 @@ function xthreads_rm_attach_fs(array &$xta): bool {
 			closedir($od);
 		}
 		if($rmdir) {
-			unlink($path.'index.html');
+            if(file_exists($path.'index.html')) {
+                unlink($path.'index.html');
+            }
 			rmdir($path);
 		}
 	}
