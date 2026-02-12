@@ -277,7 +277,7 @@ function xthreads_activate(): void {
 	));
 	$cache->update_tasks();
 	
-	if(XTHREADS_MODIFY_TEMPLATES) {
+	if(XTHREADS_MODIFY_TEMPLATES && $mybb->version_code < 1900) {
 		// prevent doubling of template edits
 		xthreads_undo_template_edits();
 		// following original in the _install() function, as these variables aren't evaluated when deactivated
