@@ -1,0 +1,12 @@
+<form action="{{ mybb.settings.bburl }}/forumdisplay.php" method="get">
+    <span class="smalltext"><strong>{{ lang.search_forum }}</strong></span>
+    <label>
+        <input type="text" class="textbox" name="search" value="{{ searchval }}" />
+    </label> {{ gobutton }}
+    <input type="hidden" name="fid" value="{{ fid }}" />
+    <input type="hidden" name="sortby" value="{{ sortby }}" />
+    <input type="hidden" name="order" value="{{ sortordernow }}" />
+    <input type="hidden" name="datecut" value="{{ datecut }}" />
+    {{ xthreads_forum_filter_form }}
+</form>
+<br />

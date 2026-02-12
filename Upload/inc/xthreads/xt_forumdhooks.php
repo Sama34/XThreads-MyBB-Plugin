@@ -448,8 +448,25 @@ function xthreads_forumdisplay_filter(): void {
 			$tvisibleonly .= ' AND t.'.$qstr;
 			$searchval = htmlspecialchars_uni($mybb->input['search']);
 		}
-		
-		eval('$GLOBALS[\'searchforum\'] = "'.$templates->get('forumdisplay_searchforum_inline').'";');
+
+        global $mybb;
+
+        if($mybb->version_code >= 1900) {
+            $GLOBALS['searchforum'] = \MyBB\View\template(
+                '@ext.xthreads/forumdisplay_searchforum_inline.twig',
+                [
+                    'searchval' => $searchval,
+                    'gobutton' => $gobutton,
+                    'fid' => $fid,
+                    'sortby' => $sortby,
+                    'sortordernow' => $sortordernow,
+                    'datecut' => $datecut,
+                    'xthreads_forum_filter_form' => $xthreads_forum_filter_form,
+                ],
+            );
+        } else {
+            eval('$GLOBALS[\'searchforum\'] = "'.$templates->get('forumdisplay_searchforum_inline').'";');
+        }
 	}
 	if(!empty($tf_filters)) {
 		foreach($tf_filters as $field => &$val) {
