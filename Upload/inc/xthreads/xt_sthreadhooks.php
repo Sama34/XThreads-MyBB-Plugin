@@ -252,6 +252,8 @@ function xthreads_showthread_firstpost(): void {
 			static $done=false;
 			if(!$done && $table == \'posts p\' && $fields == \'p.pid\' && ($options[\'order_by\'] == \'p.dateline\' || $options[\'order_by\'] == \'p.dateline, p.pid\')) {
 				$done = true;
+				global $mybb;
+				
 				'.$firstpost_hack_code.'
 					xthreads_showthread_firstpost_hack();
 			}
