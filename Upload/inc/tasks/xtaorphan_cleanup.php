@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 function task_xtaorphan_cleanup(array &$task): void {
 	global $db, $lang, $plugins, $mybb;

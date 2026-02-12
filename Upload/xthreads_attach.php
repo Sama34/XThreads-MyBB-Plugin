@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /***
  * Lightweight PHP script for handling XThreads attachment downloads
  * Is lightweight as it only includes one file (MyBB settings file) and can work without querying the DB at all

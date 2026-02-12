@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * All "common" update (eg newthread etc) hooks placed here to make main plugin file smaller
  */

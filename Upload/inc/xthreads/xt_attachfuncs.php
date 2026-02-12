@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 defined('MYBB_ROOT') or die('This file cannot be accessed directly.');
 
 // saves us from including inc/functions.php, and gets around quirky MyBB IP functions

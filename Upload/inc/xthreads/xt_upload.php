@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * A lot of this code is copied from MyBB's inc/functions_upload.php
  */

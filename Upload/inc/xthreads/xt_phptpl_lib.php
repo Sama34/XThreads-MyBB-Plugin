@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 // various functions from Template Conditionals and PHP in Templates plugin
 
