@@ -730,7 +730,16 @@ function xthreads_forumdisplay_thread() {
 				$GLOBALS['nullthreads'] = '';
 				while($nulls--) {
 					$bgcolor = alt_trow(); // TODO: this may be problematic
-					eval('$GLOBALS[\'nullthreads\'] .= "'.$templates->get('forumdisplay_thread_null').'";');
+
+                    global $mybb;
+
+                    if($mybb->version_code >= 1900) {
+                        $GLOBALS['nullthreads'] .= \MyBB\View\template(
+                            '@ext.xthreads/forumdisplay_thread_null.twig',
+                        );
+                    } else {
+                        eval('$GLOBALS[\'nullthreads\'] .= "'.$templates->get('forumdisplay_thread_null').'";');
+                    }
 				}
 			}
 		}
