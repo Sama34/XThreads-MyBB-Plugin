@@ -117,7 +117,7 @@ class XTImageTransform {
 			$nw = max(round($h*$r), 1);
 			$nh = $h;
 		}
-		return $this->resize($nw, $nh);
+		return $this->resize((int)$nw, (int)$nh);
 	}
 
     /** @return self|void */
