@@ -22,9 +22,22 @@ function xthreads_showthread(): void {
 		$bgcolor = alt_trow();
 		eval('$threadfields_display_rows .= "'.$templates->get('showthread_threadfield_row').'";');
 	} unset($value);
-	if($threadfields_display_rows)
-		eval('$threadfields_display = "'.$templates->get('showthread_threadfields').'";');
-	
+
+	if($threadfields_display_rows) {
+        global $mybb;
+
+        if($mybb->version_code >= 1900) {
+            $threadfields_display = \MyBB\View\template(
+                '@ext.xthreads/showthread_threadfields.twig',
+                [
+                    'thread_fields' => $threadfields_display_rows,
+                ],
+            );
+        } else {
+            eval('$threadfields_display = "'.$templates->get('showthread_threadfields').'";');
+        }
+    }
+
 	global $mybb;
 	/*
 	if($mybb->input['action'] == 'xtnext' || $mybb->input['action'] == 'xtprev') {

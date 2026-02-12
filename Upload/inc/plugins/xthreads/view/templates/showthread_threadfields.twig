@@ -1,0 +1,12 @@
+<section id="showthread_threadfields" style="">
+    {% for title,value in thread_fields %}
+        <div class="thread_fields_row">
+            <div>
+                <strong>{{ title }}:</strong>
+            </div>
+            <div>
+                {{ value|raw }}
+            </div>
+        </div>
+    {% endfor %}
+</section>
