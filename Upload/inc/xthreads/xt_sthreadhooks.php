@@ -159,7 +159,15 @@ function xthreads_showthread_firstpost(): void {
 		// execute this in case there's only one post in the thread
 		xthreads_tpl_firstpost_moveout();
 		if(!$posts) {
-			eval('$posts = "'.$GLOBALS['templates']->get('showthread_noreplies').'";');
+            global $mybb;
+
+            if($mybb->version_code >= 1900) {
+                $posts = \MyBB\View\template(
+                    '@ext.xthreads/showthread_noreplies.twig',
+                );
+            } else {
+                eval('$posts = "'.$GLOBALS['templates']->get('showthread_noreplies').'";');
+            }
 		}
 	}
 	function xthreads_tpl_postbitrestore(): void {
