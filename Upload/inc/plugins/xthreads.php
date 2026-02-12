@@ -53,7 +53,7 @@ const XTHREADS_FILTER_PREFIX = 2;
 const XTHREADS_FILTER_ANYWHERE = 3;
 const XTHREADS_FILTER_WILDCARD = 4;
 
-if(file_exists(MYBB_ROOT.'cache/xthreads.php')) {
+if(file_exists(MYBB_ROOT.'cache/xthreads.php'))
     include_once(MYBB_ROOT.'cache/xthreads.php'); // include defines/settings
 if (!defined('IN_ADMINCP') && file_exists(MYBB_ROOT . 'cache/xthreads_evalcache.php')) {
     include_once MYBB_ROOT . 'cache/xthreads_evalcache.php'; // if missing, we'll regenerate only in the AdminCP; weird heuristic, but one would imagine that a visit there is likely if the evalcache stuffs up
