@@ -832,7 +832,22 @@ function xthreads_input_generate(array &$data, array &$threadfields, int $fid, i
 		
 		$altbg = alt_trow();
 		$inputfield =& $tfinput[$k];
-		eval('$tfinputrow[$k] = "'.$GLOBALS['templates']->get('post_threadfields_inputrow').'";');
+
+        global $mybb;
+
+        if($mybb->version_code >= 1900) {
+            $tfinputrow[$k] = \MyBB\View\template(
+                '@ext.xthreads/post_threadfields_inputrow.twig',
+                [
+                    'altbg' => $altbg,
+                    'tf' => $tf,
+                    'inputfield' => $inputfield,
+                ]
+            );
+        } else {
+            eval('$tfinputrow[$k] = "'.$GLOBALS['templates']->get('post_threadfields_inputrow').'";');
+        }
+
 		if(!($tf['hidefield'] & XTHREADS_HIDE_INPUT))
 			$extra_threadfields .= $tfinputrow[$k];
 	}
