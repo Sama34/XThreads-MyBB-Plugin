@@ -240,6 +240,12 @@ Put your stuff here
 }
 
 function xthreads_undo_template_edits(): void {
+    global $mybb;
+
+    if($mybb->version_code < 1900) {
+        return;
+    }
+
 	require_once MYBB_ROOT.'inc/adminfunctions_templates.php';
 	find_replace_templatesets('editpost', '#\\{\\$extra_threadfields\\}#', '', 0);
 	find_replace_templatesets('newthread', '#\\{\\$extra_threadfields\\}#', '', 0);

@@ -26,7 +26,9 @@ if(XTHREADS_INSTALLED_VERSION < 1.1) {
 
 require_once MYBB_ROOT.'inc/adminfunctions_templates.php';
 if(XTHREADS_INSTALLED_VERSION < 1.2) {
-	if(XTHREADS_MODIFY_TEMPLATES)
+    global $mybb;
+
+	if(XTHREADS_MODIFY_TEMPLATES && $mybb->version_code < 1900)
 		find_replace_templatesets('forumdisplay_searchforum_inline', '#\\</form\\>#', '{$xthreads_forum_filter_form}</form>');
 	
 	$db->write_query('ALTER TABLE `'.$db->table_prefix.'xtattachments` MODIFY COLUMN `md5hash` binary(16) default null');
