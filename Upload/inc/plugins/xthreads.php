@@ -42,6 +42,8 @@ $plugins->add_hook('usercp_start', 'xthreads_fix_stats_usercp', 10, $mischooks_f
 $plugins->add_hook('portal_start', 'xthreads_portal', 10, $mischooks_file);
 $plugins->add_hook('portal_announcement', 'xthreads_portal_announcement', 10, $mischooks_file);
 
+$plugins->add_hook('postbit', 'xthreads_parser_tags_post', file: $mischooks_file);
+
 
 $plugins->add_hook('showthread_start', 'xthreads_showthread', 10, MYBB_ROOT.'inc/xthreads/xt_sthreadhooks.php');
 
