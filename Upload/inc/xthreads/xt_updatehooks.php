@@ -1153,10 +1153,14 @@ function xthreads_upload_attachments(): void {
 				$GLOBALS['xt_attach_errors_array'] =& $errors;
 				$templates->cache['__xt_orig_error_attacherror'] = $templates->cache['error_attacherror'] ?? '';
 				function xthreads_upload_attachments_error() {
-					global $theme, $templates, $attacherror, $mybb, $lang, $fid;
+					global $theme, $templates, $attacherror, $post_errors, $mybb, $lang, $fid;
 					if($attacherror || !$GLOBALS['xt_attach_errors_array']) return; // already handled by template cache hack
 
-					$attacherror = inline_error($GLOBALS['xt_attach_errors_array']);
+                    if($mybb->version_code >= 1900) {
+                        $post_errors = inline_error($GLOBALS['xt_attach_errors_array']);
+                    } else {
+                        $attacherror = inline_error($GLOBALS['xt_attach_errors_array']);
+                    }
 				}
 				$plugins->add_hook('editpost_action_start', 'xthreads_upload_attachments_error');
 			} else {
