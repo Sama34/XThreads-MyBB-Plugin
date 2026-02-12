@@ -504,7 +504,7 @@ function xthreads_sanitize_disp_set_blankthumbs(array &$s, array &$tfinfo): void
 	}
 }
 // compatibility with XThreads < 1.60: we need to have the &$s variable here (rather than return $s) because we need to allow usage of {$threadfields[key]..} usage which was allowed
-function xthreads_sanitize_disp_set_xta_fields(null|array|string &$s, int $aid, array &$tfinfo, string $dispfmt='', string $evalfunc=''): void {
+function xthreads_sanitize_disp_set_xta_fields(null|array|string|int &$s, int $aid, array &$tfinfo, string $dispfmt='', string $evalfunc=''): void {
 	global $xta_cache;
 	if(!is_numeric($aid) || !isset($xta_cache[$aid])) {
 		// fallback - prevent templating errors if this file happens to not exist
@@ -559,7 +559,7 @@ function xthreads_sanitize_disp_set_xta_fields(null|array|string &$s, int $aid, 
 	}
 	//return $s;
 }
-function xthreads_sanitize_disp(null|array|string &$s, array &$tfinfo, string $mename=null, bool $noextra=false): void {
+function xthreads_sanitize_disp(null|array|string|int &$s, array &$tfinfo, string $mename=null, bool $noextra=false): void {
 	$evalfunc = 'xthreads_evalcache_'.$tfinfo['field'];
 	if(!$noextra) {
 		// this "hack" stops this function being totally independent of the outside world :(

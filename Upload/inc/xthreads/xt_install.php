@@ -258,7 +258,7 @@ define('XTHREADS_INSTALL_TPLADD_EXTRASORT', str_replace("\r", '',
 					<option value="attachmentcount" {$sortsel[\'attachmentcount\']}>{$lang->sort_by_attachmentcount}</option>'
 ));
 function xthreads_activate(): void {
-	global $db, $cache, $lang, $plugins;
+	global $mybb, $db, $cache, $lang, $plugins;
 	$plugins->run_hooks('xthreads_activate_start');
 	$db->insert_query('tasks', array(
 		'title' => $db->escape_string($lang->xthreads_orphancleanup_name),

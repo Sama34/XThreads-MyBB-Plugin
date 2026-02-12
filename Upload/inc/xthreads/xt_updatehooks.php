@@ -282,8 +282,7 @@ function xthreads_input_posthandler_insert(\PostDataHandler &$ph): \PostDataHand
 	
 	
 	global $threadfield_cache, $db;
-	$fid = $data['fid'] ?? 0;
-	if(!$fid) $fid = $GLOBALS['fid'];
+	$fid = $data['fid'] ?? $ph->data['fid'] ?? $GLOBALS['fid'] ?? 0;
 	if(!isset($threadfield_cache))
 		$threadfield_cache = xthreads_gettfcache((int)$fid);
 	if(empty($threadfield_cache)) return $ph;
@@ -293,7 +292,7 @@ function xthreads_input_posthandler_insert(\PostDataHandler &$ph): \PostDataHand
 	foreach($threadfield_cache as $k => &$v) {
 		$evalfunc = 'xthreads_evalcache_'.$k;
 		if(isset($ph->data['xthreads_'.$k])) {
-			if(($v['inputtype'] == XTHREADS_INPUT_FILE || $v['inputtype'] == XTHREADS_INPUT_FILE_URL) && is_numeric(str_replace(',','',$ph->data['xthreads_'.$k])))
+			if(($v['inputtype'] == XTHREADS_INPUT_FILE || $v['inputtype'] == XTHREADS_INPUT_FILE_URL) && is_numeric(str_replace(',','',(string)$ph->data['xthreads_'.$k])))
 				$xtaupdates[] = $ph->data['xthreads_'.$k]; // if multiple, it's already comma-delimited, so naturally works after imploding :)
 			
 			$updates[$k] = $ph->data['xthreads_'.$k];
@@ -332,7 +331,7 @@ function xthreads_input_posthandler_insert(\PostDataHandler &$ph): \PostDataHand
     return $ph;
 }
 
-function xthreads_convert_str_to_datatype(mixed $s, int $type): ?float {
+function xthreads_convert_str_to_datatype(mixed $s, int $type): null|float|string {
 	if($type == XTHREADS_DATATYPE_TEXT) return $s;
 	$sl = strtoupper($s);
 	if($s === '' || $sl === 'NULL' || $sl === 'NUL') return null;
@@ -1342,7 +1341,7 @@ function xthreads_str_ireplace(array|string $find, array|string $replace, string
 
 // --- some functions to fix up MyBB's bad DB methods ---
 // escape function which handles NULL values properly, and enquotes strings
-function xthreads_db_escape(\xthreads_db_binary_value|null|bool|string $s): string {
+function xthreads_db_escape(\xthreads_db_binary_value|null|bool|string|int|float $s): string {
 	if($s === null) return 'NULL';
 	if($s === true) return '1';
 	if($s === false) return '0';

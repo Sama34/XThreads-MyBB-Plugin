@@ -127,7 +127,7 @@ function do_upload_xtattachment(array|string $attachment, array &$tf, int $updat
 		if(preg_match('~^([0-9]+)x([0-9]+)(\\|([0-9]+)x([0-9]+))?$~', $tf['fileimage'], $match)) {
 			// check if image exceeds max/min dimensions
 			if(($img_dimensions[0] < $match[1] || $img_dimensions[1] < $match[2]) || (
-				$match[3] && (
+				isset($match[3]) && $match[3] && (
 					$img_dimensions[0] > $match[4] || $img_dimensions[1] > $match[5]
 				)
 			)) {
@@ -203,7 +203,7 @@ function do_upload_xtattachment(array|string $attachment, array &$tf, int $updat
 	// We won't use MyBB's nice monthly directories, instead, we'll use a more confusing system based on the timestamps
 	// note, one month = 2592000 seconds, so if we split up by 1mil, it'll be approx 11.5 days
 	// If safe_mode is enabled, don't attempt to use the monthly directories as it won't work
-	if(ini_get('safe_mode') == 1 || strtolower(ini_get('safe_mode')) == 'on') {
+	if(ini_get('safe_mode') == 1 || strtolower((string)ini_get('safe_mode')) == 'on') {
 		$month_dir = '';
 	} else {
 		$month_dir = 'ts_'.floor(TIME_NOW / 1000000).'/';
