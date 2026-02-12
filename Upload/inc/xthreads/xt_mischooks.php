@@ -239,6 +239,14 @@ function xthreads_portal_announcement(): void {
 			eval('$GLOBALS[\'numcomments\'] = "'.$GLOBALS['templates']->get($tplname).'";');
 		}
 	}
+
+    static $parse_message_end = false;
+
+    if (!$parse_message_end) {
+        global $plugins;
+
+        $plugins->add_hook('parse_message_end', 'xthreads_parser_tags_parse');
+    }
 }
 
 function xthreads_portalsearch_cache_hack(string $tplpref, string $tplname): void {
@@ -495,3 +503,30 @@ function xthreads_breadcrumb_hack_printthread(): void {
 	}
 }
 
+function xthreads_parser_tags_post(array &$post): void
+{
+    global $thread;
+
+    if ((int)$thread['firstpost'] === (int)$post['pid']) {
+        xthreads_parser_tags_parse($post['message']);
+    }
+}
+
+function xthreads_parser_tags_parse(string &$message): void
+{
+    global $threadfields;
+
+    $message = preg_replace_callback(
+        '/\[' . XTHREADS_MYCODE_TAG_NAME . '=([a-zA-Z0-9_-]+)]/',
+        function (array $matches) use ($threadfields) {
+            $field_key = $matches[1] ?? false;
+
+            if (!$field_key || !isset($threadfields[$field_key]['value'])) {
+                return '[' . XTHREADS_MYCODE_TAG_NAME . "=$field_key]";
+            }
+
+            return $threadfields[$field_key]['value'];
+        },
+        $message
+    );
+}
