@@ -279,8 +279,10 @@ if(XTHREADS_INSTALLED_VERSION < 1.60) {
 	$db->update_query('threadfields', array('textmask' => $db->escape_string('^([^ "(),:;<>@\\[\\\\\\]]+)@([a-z0-9_.\\-]+)$')), 'textmask="'.$db->escape_string('^([a-z0-9_.\\-]+)@([a-z0-9_.\\-]+)$').'"');
 	// we never used this, so may as well get rid of it
 	$db->write_query('ALTER TABLE `'.$db->table_prefix.'forums` DROP COLUMN `xthreads_wol_xtattachment`');
-	
-	if(XTHREADS_MODIFY_TEMPLATES)
+
+    global $mybb;
+
+    if(XTHREADS_MODIFY_TEMPLATES && $mybb->version_code < 1900)
 		find_replace_templatesets('showthread', '#\\{\\$classic_header\\}#', '{$threadfields_display}{$classic_header}');
 	
 	require_once MYBB_ROOT.'inc/xthreads/xt_install.php';
