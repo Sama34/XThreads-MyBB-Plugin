@@ -94,7 +94,20 @@ function xthreads_search_result_thread(): void {
 				if($pagesstop > 4) {
 					$pagesstop = 4;
 					$page_link = get_thread_link($thread['tid'], $thread['pages']).$highlight;
-					eval('$morelink = "'.$templates->get('forumdisplay_thread_multipage_more').'";');
+
+                    global $mybb;
+
+                    if($mybb->version_code >= 1900) {
+                        $morelink = \MyBB\View\template(
+                            '@ext.xthreads/forumdisplay_thread_multipage_more.twig',
+                            [
+                                'link' => $page_link,
+                                'pages' => $thread['pages'],
+                            ]
+                        );
+                    } else {
+                        eval('$morelink = "'.$templates->get('forumdisplay_thread_multipage_more').'";');
+                    }
 				}
 
                 global $mybb;
