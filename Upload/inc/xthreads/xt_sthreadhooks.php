@@ -5,6 +5,8 @@ if(!defined('IN_MYBB'))
 
 function xthreads_showthread(): void {
 	global $thread, $threadfields, $threadfields_display, $threadfields_display_rows, $templates, $theme, $threadfield_cache;
+    isset($threadfields) || $threadfields = [];
+
 	// just do an extra query to grab the threadfields
 	xthreads_get_threadfields((int)$thread['tid'], $threadfields, false, $thread);
 	
