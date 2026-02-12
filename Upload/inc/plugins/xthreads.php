@@ -6,6 +6,53 @@ if(!defined('IN_MYBB'))
 const XTHREADS_VERSION = 1.68;
 const XTHREADS_MYCODE_TAG_NAME = 'field';
 
+
+// uses lower 2 bits
+const XTHREADS_SANITIZE_HTML = 0;     // plaintext only
+const XTHREADS_SANITIZE_HTML_NL = 1;  // as above, but allow newlines
+const XTHREADS_SANITIZE_PARSER = 2;   // run through MyCode
+const XTHREADS_SANITIZE_NONE = 3;     // no filter
+const XTHREADS_SANITIZE_MASK = 0x03;
+
+const XTHREADS_SANITIZE_PARSER_NL2BR = 0x04;
+const XTHREADS_SANITIZE_PARSER_NOBADW = 0x08;
+const XTHREADS_SANITIZE_PARSER_HTML = 0x10;
+const XTHREADS_SANITIZE_PARSER_MYCODE = 0x20;
+const XTHREADS_SANITIZE_PARSER_MYCODEIMG = 0x40;
+const XTHREADS_SANITIZE_PARSER_SMILIES = 0x80;
+const XTHREADS_SANITIZE_PARSER_VIDEOCODE = 0x100; // 1.6 only, but harmless in 1.4
+
+const XTHREADS_EDITABLE_ALL = 0;   // editable by all
+const XTHREADS_EDITABLE_REQ = 1;   // required field; implies editable by all
+const XTHREADS_EDITABLE_MOD = 2;   // editable by mods
+const XTHREADS_EDITABLE_ADMIN = 3; // editable by admins only
+const XTHREADS_EDITABLE_NONE = 4;  // not editable
+
+const XTHREADS_HIDE_INPUT = 0x1;
+const XTHREADS_HIDE_THREAD = 0x2;
+const XTHREADS_HIDE_FORUM_SORT = 0x4;
+
+const XTHREADS_INPUT_TEXT = 0;
+const XTHREADS_INPUT_TEXTAREA = 1;
+const XTHREADS_INPUT_SELECT = 2;
+const XTHREADS_INPUT_RADIO = 3;
+const XTHREADS_INPUT_CHECKBOX = 4;
+const XTHREADS_INPUT_FILE = 5;
+const XTHREADS_INPUT_FILE_URL = 6;
+
+const XTHREADS_DATATYPE_TEXT = 0;
+const XTHREADS_DATATYPE_INT = 1;
+const XTHREADS_DATATYPE_UINT = 2;
+const XTHREADS_DATATYPE_BIGINT = 3;
+const XTHREADS_DATATYPE_BIGUINT = 4;
+const XTHREADS_DATATYPE_FLOAT = 5;
+
+const XTHREADS_FILTER_NONE = 0;
+const XTHREADS_FILTER_EXACT = 1;
+const XTHREADS_FILTER_PREFIX = 2;
+const XTHREADS_FILTER_ANYWHERE = 3;
+const XTHREADS_FILTER_WILDCARD = 4;
+
 if(file_exists(MYBB_ROOT.'cache/xthreads.php')) {
     include_once(MYBB_ROOT.'cache/xthreads.php'); // include defines/settings
 if (!defined('IN_ADMINCP') && file_exists(MYBB_ROOT . 'cache/xthreads_evalcache.php')) {
