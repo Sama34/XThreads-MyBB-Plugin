@@ -127,7 +127,18 @@ function xthreads_search_result_thread(): void {
                         eval('$threadpages .= "'.$templates->get('forumdisplay_thread_multipage_page').'";');
                     }
 				}
-				eval('$thread[\'multipage\'] = "'.$templates->get('forumdisplay_thread_multipage').'";');
+
+                if($mybb->version_code >= 1900) {
+                    $thread['multipage'] = \MyBB\View\template(
+                        '@ext.xthreads/forumdisplay_thread_multipage.twig',
+                        [
+                            'pages' => $threadpages,
+                            'more_link' => $morelink,
+                        ]
+                    );
+                } else {
+                    eval('$thread[\'multipage\'] = "'.$templates->get('forumdisplay_thread_multipage').'";');
+                }
 			}
 		}
 		else
